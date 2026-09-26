@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          VERSION=$(sed -n 's/^##[[:space:]]*Version:[[:space:]]*//p' EbonOrbReroll/*.toc \
+          VERSION=$(sed -n 's/^##[[:space:]]*Version:[[:space:]]*//p' EbonBuilds/*.toc \
                     | head -n 1 | tr -d '\r' | sed 's/[[:space:]]*$//')
 
           if [ -z "$VERSION" ]; then
@@ -29,15 +29,15 @@ jobs:
             exit 1
           fi
 
-          mkdir -p dist/EbonOrbReroll
-          cp -r EbonOrbReroll/. dist/EbonOrbReroll/
+          mkdir -p dist/EbonBuilds
+          cp -r EbonBuilds/. dist/EbonBuilds/
 
-          ( cd dist && zip -r "EbonOrbReroll-${VERSION}.zip" EbonOrbReroll )
+          ( cd dist && zip -r "EbonBuilds-${VERSION}.zip" EbonBuilds )
 
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "ASSET=dist/EbonOrbReroll-${VERSION}.zip" >> "$GITHUB_ENV"
+          echo "ASSET=dist/EbonBuilds-${VERSION}.zip" >> "$GITHUB_ENV"
 
-          echo "Zip construit : EbonOrbReroll-${VERSION}.zip"
+          echo "Zip construit : EbonBuilds-${VERSION}.zip"
 
       - name: Publier la Release
         if: github.ref_type == 'tag'
@@ -66,6 +66,6 @@ jobs:
         if: github.ref_type != 'tag'
         uses: actions/upload-artifact@v4
         with:
-          name: EbonOrbReroll-${{ env.VERSION }}
+          name: EbonBuilds-${{ env.VERSION }}
           path: dist/*.zip
           if-no-files-found: error

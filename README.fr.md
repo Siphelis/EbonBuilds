@@ -1,11 +1,8 @@
-# 🔮 EbonOrbReroll
+# 🔮 EbonBuilds
 
-**Le tirage d'un Orbe des Souvenirs Perdus n'est plus une impasse.**
+**Planifiez vos builds d'Échos, laissez l'addon choisir vos Échos, et relancez les tirages d'Orbe jusqu'à obtenir l'Écho voulu.**
 
-Le serveur refuse la relance sur un tirage d'Orbe. EbonOrbReroll fait à votre
-place les deux gestes qu'un joueur exécuterait à la main pour la contourner, puis
-les répète jusqu'à ce que l'Écho que vous cherchez tombe. Le tout dans un panneau
-qui se glisse sous les cartes et disparaît dès qu'il n'a plus rien à y faire.
+EbonBuilds est un addon pour Project Ebonhold. Il vous aide avec les Échos de vos runs.
 
 [English](README.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
@@ -13,125 +10,295 @@ qui se glisse sous les cartes et disparaît dès qu'il n'a plus rien à y faire.
 
 ## Table des matières
 
-- [Pourquoi cette extension](#-pourquoi-cette-extension)
 - [Fonctionnalités](#-fonctionnalités)
 - [Installation](#-installation)
-- [Démarrage rapide](#️-démarrage-rapide)
-- [Anatomie du code](#-anatomie-du-code--comment-ça-fonctionne)
+- [Démarrage rapide](#-démarrage-rapide)
+- [Les builds](#-les-builds)
+- [Étoiles et note communautaire](#-étoiles-et-note-communautaire)
+- [Automatisation](#-automatisation)
+- [Relance avec les Orbes et chasse](#-relance-avec-les-orbes-et-chasse)
+- [Partage](#-partage)
+- [Suivre vos runs](#-suivre-vos-runs)
+- [Réglages et commandes](#-réglages-et-commandes)
 - [Licence et crédits](#-licence-et-crédits)
 
 ---
 
-## 🔥 Pourquoi cette extension
-
-Sur un tirage d'Orbe, le serveur refuse la relance, le bannissement et le gel —
-ProjectEbonhold masque d'ailleurs son propre bouton *Relancer* à ce moment-là.
-Rien dans le protocole ne relance ce tirage, et cette extension ne prétend pas le
-contraire. Elle exécute deux actions ordinaires, coup sur coup :
-
-1. **Prendre une carte** sur la table. La pile est accordée.
-2. **Dépenser un orbe pour l'oublier à nouveau**, ce qui pousse un nouveau
-   tirage d'Échos.
-
-Bilan : trois nouvelles cartes, un orbe en moins, exactement les mêmes Échos
-possédés qu'avant. Rien de nouveau n'est envoyé, rien n'est décidé en local — le
-serveur valide la possession, le verrou et la charge à la seconde étape, comme il
-l'a toujours fait.
-
-La seule différence avec une vraie relance : entre les deux gestes, vous possédez
-réellement l'Écho sacrifié. Si le serveur refuse la seconde étape, il vous reste.
-C'est pourquoi la carte est choisie comme la chose la moins chère à se retrouver
-sur les bras, et pourquoi l'infobulle la nomme **avant** le clic.
-
 ## ✨ Fonctionnalités
 
-- **Bouton « Reroll (Orb) »** sous les trois cartes, avec le nombre d'orbes
-  possédés. Il n'apparaît que sur un tirage d'Orbe : un tirage de montée de
-  niveau a déjà son propre bouton de relance, auquel rien n'est touché.
-- **La carte sacrifiée est choisie, pas subie.** Qualité la plus basse d'abord.
-  Jamais un Écho permanent (le serveur refuserait la seconde étape), jamais une
-  pile déjà pleine (il refuserait la première), jamais un Écho que vous chassez.
-  La carte garantie du slot de build, les cartes gelées et les cartes reportées
-  ne passent qu'en dernier recours : elles ont été gardées pour une raison.
-- **La chasse.** Armez des Échos dans le journal du jeu, fixez le nombre d'orbes
-  que vous acceptez d'y laisser, et l'extension relance jusqu'à ce que l'un
-  d'eux soit distribué. Elle **ne le prend jamais pour vous** : deux Échos voulus
-  peuvent tomber ensemble, et arbitrer entre eux vous regarde. Elle s'arrête et
-  le dit.
-- **Le coût suit le curseur de qualité du jeu**, lu sur votre dernière dépense
-  d'orbe. Pas un second réglage à côté de celui qui existe déjà.
-- **Curseur de budget** borné par ce que vous possédez réellement. Un budget qui
-  ne paie même pas un tirage est refusé d'avance, en nommant le chiffre à bouger,
-  plutôt que de lancer une chasse qui s'arrêterait dans la seconde.
-- **Des refus qui expliquent.** Bouton grisé et infobulle qui dit pourquoi : plus
-  d'orbes, compte pas encore connu, rien d'armé, auto-acceptation active. Et
-  quand aucune carte de la table ne peut être oubliée, le bouton disparaît au
-  lieu de rester grisé — un « Relancer (0) » éteint dirait « vous n'avez plus de
-  relances », ce qui serait une autre affirmation, et une fausse.
-- **Aucune boucle.** Tout est accroché à des fonctions que ProjectEbonhold appelle
-  déjà quand son état change, plus des minuteurs qui s'arment et se désarment
-  seuls. Entre deux tirages, l'extension n'exécute pas une ligne de Lua.
-- **Rien à nettoyer.** La liste d'Échos chassés vit le temps d'une session et
-  meurt avec elle : aucune SavedVariables, rien à migrer, rien de périmé à
-  expliquer dans trois patchs.
+- **Builds.** Écrivez un plan pour chaque build : les Échos visés et l'envie que vous avez de chacun.
+- **Étoiles.** Chaque Écho reçoit de 1 à 3 étoiles pour votre classe. Elles apparaissent sur les cartes du tirage, dans le journal des Échos du jeu et dans vos builds enregistrés.
+- **Automatisation.** À chaque tirage, l'addon peut choisir, bannir, relancer ou geler à votre place, selon votre build actif.
+- **Relance à l'Orbe et chasse.** Sur un tirage d'Orbe, l'addon peut relancer avec une Orbe. Il peut aussi recommencer jusqu'à ce qu'un Écho que vous avez marqué sorte.
+- **Partage.** Partagez vos builds avec les autres joueurs, importez les leurs, et profitez de ce que la communauté garde et bannit.
+- **Suivi des runs.** Consultez des statistiques par build, les Échos qu'il vous manque, et un journal de chaque décision.
 
 ## 📦 Installation
 
-1. [**EbonOrbReroll**](https://github.com/Siphelis/EbonOrbReroll/releases/latest) — téléchargez la dernière version.
-2. Décompressez le dossier `EbonOrbReroll` dans
-   `Interface/AddOns/`.
-3. Vérifiez dans l'écran de sélection des extensions que
-   **EbonOrbReroll** est bien coché.
+1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — téléchargez la dernière version.
+2. Décompressez le dossier `EbonBuilds` dans `Interface/AddOns/`.
+   Installez **EbonAPI** de la même façon s'il n'y est pas encore. EbonAPI est commun aux addons Ebonhold. EbonBuilds ne démarre pas sans lui.
+3. Dans l'écran de sélection des addons, vérifiez que **EbonBuilds** et **EbonAPI** sont cochés.
 
-## 🕹️ Démarrage rapide
+L'addon utilise la langue de votre jeu : anglais, français, allemand ou espagnol. Pour la changer, tapez `/eapi lang` suivi de `enUS`, `frFR`, `deDE` ou `esES`.
 
-Aucune commande slash : tout tient dans le panneau qui apparaît sous les cartes.
+## 🚀 Démarrage rapide
 
-**Pour une relance unique**, il n'y a rien à préparer — cliquez sur
-**Reroll (Orb)**. L'infobulle nomme la carte qui sera sacrifiée et le coût.
+1. Tapez `/ebb`, ou cliquez sur le bouton EbonBuilds de la minicarte. La fenêtre s'ouvre.
+2. Cliquez sur **+ Nouveau build**.
+3. Choisissez **Mode assistant** pour être guidé pas à pas, ou **Mode expert** pour aller directement à l'éditeur.
+4. Cliquez sur **Enregistrer**. Le build devient votre build actif. Son automatisation est activée.
+5. Jouez. À chaque tirage, l'addon attend deux secondes, agit, puis affiche un bandeau qui indique ce qu'il a fait.
 
-**Pour une chasse :**
+Vous voulez seulement les étoiles, sans automatisation ? Cliquez sur **Automatisation : OUI** sur la page du build. Le bouton passe à **Automatisation : NON**. Les étoiles restent.
 
-1. Ouvrez le journal des Échos et **Ctrl+clic** sur les icônes que vous voulez.
-   Un liseré doré marque celles qui sont armées, un second Ctrl+clic les retire.
-   Les deux grilles répondent — le catalogue à droite et les Échos de la run en
-   cours à gauche — de sorte que viser une pile supplémentaire de quelque chose
-   que vous possédez déjà reste possible.
-2. Coupez l'option d'Ebonhold **« auto-accept loadout echoes »**. La chasse la
-   refuse tant qu'elle est active : elle prendrait la carte à votre place.
-3. Sur un tirage d'Orbe, réglez le curseur sur le nombre d'orbes que vous
-   acceptez de dépenser. L'étiquette affiche combien de tirages cela paie.
-4. Cliquez sur **Hunt**. Le bouton devient **Stop** et compte les orbes dépensés ;
-   re-cliquez pour arrêter à tout moment.
+**Builds enregistrés** est vide ? Ouvrez une fois la fenêtre des Échos du jeu.
 
-L'extension s'arrête d'elle-même dès qu'un Écho armé est distribué, quand le
-budget est épuisé, ou dès que quelque chose l'empêche de continuer — et le chat
-dit toujours lequel des trois.
+## 📋 Les builds
 
-## 🧠 Anatomie du code — comment ça fonctionne
+### La fenêtre
 
-Deux fichiers, chargés dans cet ordre par le `.toc` : le premier définit la table
-de chaînes partagée, le second en prend une référence au chargement. La
-dépendance ne joue pas dans l'autre sens — le moteur lit `ns.Wishlist` au moment
-de l'appel, jamais au chargement, donc il ne peut pas attraper le second fichier
-à moitié construit.
+La colonne de gauche contient :
 
-| Fichier | Rôle exact |
+- **Builds enregistrés** : les builds mémorisés par le jeu lui-même, avec leurs Échos et leurs étoiles.
+- **Builds publics** : les builds partagés par les autres joueurs.
+- **Importer un build** : ajoute un build à partir d'un texte.
+- **+ Nouveau build** : crée un build.
+- Vos builds. Cliquez sur l'un d'eux pour l'ouvrir. Il devient votre build actif pour ce personnage. L'automatisation suit le build actif.
+
+### Mode assistant
+
+L'assistant demande :
+
+1. Vos Échos verrouillés.
+2. Un bonus pour les Échos nouveaux. Cette étape n'apparaît que si vous avez choisi Puissance adaptative.
+3. Vos familles : aucune, secondaire (+10) ou principale (+20).
+4. Un bonus pour chaque rareté.
+5. Les Échos qui comptent le plus : **Je le veux**, **Bien**, **Correct** ou **Bof**.
+6. Un titre et une description.
+
+L'éditeur s'ouvre à la fin. Vérifiez-le, puis cliquez sur **Enregistrer**.
+
+### L'éditeur
+
+Cliquez sur **Modifier** sur la page d'un build. L'éditeur a quatre onglets.
+
+| Onglet | Ce que vous réglez |
 | --- | --- |
-| `EbonOrbReroll.lua` | Le moteur. La table de chaînes, la machine à deux temps (prendre, puis oublier) et ses minuteurs de garde, le choix de la carte sacrifiée, le superviseur de chasse et son budget, la lecture du multiplicateur de qualité sur vos propres dépenses, les accroches sur ProjectEbonhold (`PerkUI.Show` / `Hide` / `UpdateSinglePerk` / `ResetSelection`, `OrbService.ClearOffer`, les boutons qui replient les cartes), et le panneau lui-même : deux boutons et un curseur. |
-| `EbonOrbWishlist.lua` | La greffe sur le journal des Échos. L'ensemble des Échos voulus, le Ctrl+clic qui l'alimente sur les deux grilles, le liseré doré, et le sondage qui ne tourne que pendant que le journal est affiché. Aucun panneau de notre côté : le journal dessine déjà chaque Écho, grise ceux jamais découverts et filtre par nom et par classe ; en rebâtir une copie à côté serait une seconde liste, moins bonne. |
+| **Aperçu** | Classe, spé, titre, description, Échos verrouillés et l'interrupteur **Rendre public**. |
+| **Échos** | Un poids pour chaque Écho. |
+| **Bonus** | Des points en plus par rareté, par famille et pour les Échos nouveaux. |
+| **Automatisation** | Bannissements, protections et seuils. Voir [Automatisation](#-automatisation). |
 
-L'identité d'un Écho, ici, c'est son `spellId` et rien d'autre. La grille du
-journal recycle ses boutons : la même cellule portait un identifiant avant une
-recherche et un autre après. Une marque attachée à la cellule suivrait la
-cellule ; attachée à l'identifiant, elle suit l'Écho.
+**Enregistrer** conserve vos changements. **Annuler** les abandonne. **Exporter** (en bas à gauche) donne le build sous forme de texte.
+
+Les **Échos verrouillés** sont les Échos permanents que votre build vise. Il y a 6 emplacements. Cliquez sur un emplacement pour choisir un Écho. Faites un clic droit pour le vider.
+
+La **description** peut contenir des liens d'Échos. Cliquez sur **+ Lien d'Écho**.
+
+**Onglet Échos**
+
+1. Un poids est un nombre entier, 0 ou plus. Plus il est haut, plus vous voulez l'Écho.
+2. Un seul poids couvre toutes les raretés d'un Écho.
+3. À côté du poids, vous voyez la note de chaque rareté. **Verrouillé** ou **Banni** remplace la note d'un Écho que vous avez verrouillé ou banni.
+4. Utilisez la zone de recherche, la liste des raretés et la liste des familles pour filtrer.
+5. Cochez **Toutes les classes** pour voir les Échos des autres classes.
+
+**Onglet Bonus**
+
+- **Bonus de rareté** : des points en plus pour chaque rareté.
+- **Bonus de famille** : des points en plus pour chaque famille.
+- **Bonus de nouveauté** : des points en plus pour un Écho que vous n'avez pas encore.
+- Chaque valeur s'ajoute (**+**) ou se multiplie (**x**). Cliquez sur le petit bouton à côté du nombre pour changer. En mode **x**, une valeur inférieure à 1 baisse la note.
+
+## ⭐ Étoiles et note communautaire
+
+### Ce que veulent dire les étoiles
+
+- 3 étoiles : indispensable pour votre classe.
+- 2 étoiles : entre les deux.
+- 1 étoile : vous pouvez vous en passer.
+- 3 étoiles grises : la plupart des joueurs le bannissent.
+- Aucune étoile : votre classe ne peut pas utiliser cet Écho.
+
+### Où les voir
+
+1. Dans le journal des Échos du jeu, survolez un Écho. La ligne **Intérêt pour** votre classe affiche les étoiles. Quand la communauté connaît l'Écho, une deuxième ligne **Va bien avec** cite jusqu'à trois Échos souvent gardés avec lui.
+2. Sur un tirage, sous l'icône de chaque carte.
+3. Dans **Builds enregistrés**, sous chaque Écho.
+
+### Comment la note est calculée
+
+1. Chaque Écho part de sa rareté. Plus il est rare, plus il part haut.
+2. L'addon lit ensuite les builds de votre classe : les vôtres, ceux que vous avez importés et ceux reçus des autres joueurs. Plus il y a de builds qui gardent un Écho, plus il monte.
+3. Sur les cartes du tirage et dans l'infobulle, les builds qui ressemblent à votre run actuel pèsent plus lourd. Un Écho qui va avec ce que vous possédez déjà monte.
+4. Les listes de bannissement font baisser un Écho. Dès que les listes de trois joueurs sont connues, un Écho banni par la moitié d'entre eux ou plus reçoit des étoiles grises. Un Écho banni par un cinquième d'entre eux ou plus perd une étoile.
+5. Chaque joueur compte pour un, quel que soit son nombre de builds.
+
+Plus il y a de joueurs qui utilisent l'addon, meilleure est la note.
+
+## 🤖 Automatisation
+
+L'automatisation joue vos tirages à votre place. Elle suit votre **build actif**. Chaque build a son propre interrupteur : **Automatisation : OUI** ou **Automatisation : NON** sur la page du build. Un nouveau build démarre avec l'automatisation activée.
+
+L'automatisation ne dépense jamais d'Orbes. Elle utilise seulement les Bannissements, les Relances et les Gels que le jeu vous donne.
+
+### Ce qu'elle fait à chaque tirage
+
+Après une courte attente (2 secondes par défaut), l'addon parcourt cette liste. Il fait la première action qui s'applique.
+
+1. **Prendre un Écho verrouillé.** Si un Écho verrouillé de votre build est proposé, l'addon le prend.
+2. **Bannir.** L'addon bannit d'abord un Écho de votre liste de bannissement. Ensuite, il bannit un Écho dont la note est sous le seuil de bannissement. Il lui faut un Bannissement en réserve. Il ignore les familles protégées, les cartes gelées et les cartes reportées.
+3. **Relancer.** L'addon relance quand le meilleur Écho proposé est sous le seuil de relance et qu'aucun Écho proposé n'atteint le seuil de garde. Il lui faut une Relance en réserve.
+4. **Geler.** Quand deux Échos proposés dépassent le seuil de gel, l'addon gèle le moins bon et prend le meilleur. Il lui faut un Gel en réserve.
+5. **Prendre le meilleur.** Sinon, l'addon prend l'Écho qui a la meilleure note.
+
+Un bandeau en haut de l'écran montre chaque action. Il liste les Échos proposés avec leur note, marque celui qui est choisi avec **>> <<**, et indique vos Bannissements, Relances et Gels restants. Cliquez sur le bandeau pour le fermer. Gardez la souris dessus pour le garder ouvert.
+
+### L'onglet Automatisation
+
+- **Protection contre le bannissement.** Cochez les familles qui ne doivent jamais être bannies.
+- **Échos bannis.** Les Échos à bannir en premier, quelle que soit leur note. Cliquez sur **Ajouter** pour en ajouter un. Cliquez sur une icône pour le retirer. En dessous, choisissez ce qui se passe quand tous les Échos proposés sont bannis et qu'il ne reste aucun Bannissement : **Meilleure note** ou **Au hasard**.
+- **Source de la note.** Choisissez d'où viennent les notes :
+  - **Matrice commune** (par défaut) : la note vient de la communauté, plus vos poids.
+  - **Poids manuels** : la note vient seulement de vos poids et de vos bonus.
+
+### Les seuils avec la Matrice commune
+
+La note va de -5 (tout le monde refuse l'Écho) à +3 (tout le monde le garde). Un Écho ordinaire se situe près de +1.
+
+| Seuil | Par défaut | Effet |
+| --- | --- | --- |
+| **Bannir sous** | -2,00 | Bannit un Écho proposé sous cette note. |
+| **Relancer sous** | 0,00 | Relance quand le meilleur Écho proposé est sous cette note. |
+| **Garde de relance au-dessus** | 0,00 | Bloque la relance quand un Écho proposé atteint cette note. Laissez-la au niveau du seuil de relance ou en dessous. |
+| **Geler au-dessus** | +2,00 | Gèle quand deux Échos proposés dépassent cette note. |
+| **Influence des poids** | 1,00 | Ce que vos poids ajoutent à la note. À 1,00, l'Écho qui a votre poids le plus haut ajoute 1 point. |
+
+Deux autres points à connaître :
+
+1. Chaque rareté ajoute un petit bonus à la note. Les Échos plus rares passent devant quand les notes sont proches.
+2. Si la communauté ne connaît aucun des Échos proposés, l'addon utilise vos poids pour ce tirage.
+
+Avec **Poids manuels**, les seuils sont des pourcentages du **Pic** : la meilleure note possible pour votre classe avec vos bonus.
+
+Les étoiles sont une vue simple de la note communautaire. L'automatisation utilise la note plus fine, de -5 à +3.
+
+## 🔮 Relance avec les Orbes et chasse
+
+### Comment ça marche
+
+Sur un tirage d'Orbe, le serveur refuse la relance, le bannissement et le gel. EbonBuilds ajoute un panneau sous les cartes. Le panneau enchaîne deux actions que le jeu autorise déjà :
+
+1. Il prend l'une des cartes proposées. L'Écho est accordé.
+2. Il dépense des Orbes pour oublier cet Écho. Le jeu distribue trois nouvelles cartes.
+
+Vous obtenez trois nouvelles cartes et moins d'Orbes. Vous possédez les mêmes Échos qu'avant. Le serveur vérifie chaque étape.
+
+Un point à connaître : entre les deux étapes, vous possédez vraiment l'Écho pris. Si le serveur refuse l'étape 2, vous le gardez. L'addon prend donc la carte la moins gênante à garder. L'infobulle la nomme avant que vous cliquiez.
+
+### La carte prise
+
+1. La carte de plus faible rareté passe en premier.
+2. Un Écho permanent n'est jamais pris. Le serveur refuserait de l'oublier.
+3. Un Écho dont la pile est pleine n'est jamais pris. Le serveur refuserait de l'accorder.
+4. Un Écho que vous chassez n'est jamais pris.
+5. La carte garantie d'un emplacement de build, les cartes gelées et les cartes reportées passent en dernier. Elles étaient gardées pour une raison.
+
+### Le panneau
+
+Le panneau apparaît sous les cartes, uniquement sur un tirage d'Orbe.
+
+- **Relancer (Orbe : N)** : une relance. N est votre nombre d'Orbes. L'infobulle nomme la carte prise et le coût.
+- **Chasser (n)** : lance une chasse. n est le nombre d'Échos que vous avez armés.
+- **Carré coloré** : la rareté recherchée.
+- **Curseur** : le nombre d'Orbes que la chasse peut dépenser.
+
+Sur un tirage de montée de niveau, le bouton de relance d'origine du jeu reste tel quel. Si aucune carte du tirage ne peut être oubliée, le panneau disparaît. Un bouton grisé a une infobulle qui dit pourquoi : plus d'Orbes, nombre d'Orbes pas encore reçu, aucun Écho armé, auto-acceptation activée.
+
+Un tirage coûte 1 Orbe par défaut. Le coût suit le curseur de qualité du jeu, tel qu'il était à votre dernière dépense d'Orbe.
+
+### La chasse
+
+1. Ouvrez le journal des Échos du jeu.
+2. Faites **Ctrl+clic** sur les Échos que vous voulez. Un contour doré les marque. Refaites Ctrl+clic pour en retirer un. Cela marche dans les deux listes : le catalogue et les Échos de votre run.
+3. Dans les options d'Ebonhold, désactivez **auto-accept loadout echoes**. La chasse ne démarre pas tant que cette option est activée.
+4. Si l'automatisation est activée, allumez **Chasse** en haut à droite du journal. Tant qu'il est allumé, l'automatisation vous laisse les tirages. Il reste allumé jusqu'à ce que vous l'éteigniez.
+5. Sur un tirage d'Orbe, réglez le curseur sur le nombre d'Orbes que vous acceptez de dépenser. L'étiquette indique combien de tirages cela paie.
+6. Cliquez sur **Chasser (n)**. Le bouton devient **Arrêter (dépensé/budget)**. Cliquez dessus pour arrêter à tout moment.
+
+Facultatif : cliquez sur le carré coloré pour choisir la rareté minimale de chaque Écho armé. Par défaut, un Écho armé compte dans toutes les raretés.
+
+La chasse s'arrête quand :
+
+- un Écho armé sort. La liste des Échos armés est alors vidée ;
+- le budget est dépensé ;
+- il vous reste trop peu d'Orbes ;
+- vous cliquez sur **Arrêter**, ou vous prenez une carte vous-même ;
+- aucune carte du tirage ne peut être oubliée, ou le serveur refuse une étape.
+
+Le bandeau en haut de l'écran montre l'avancement : Orbes dépensées, Échos recherchés et cartes du dernier tirage. Il dit aussi pourquoi la chasse s'est arrêtée.
+
+La chasse **ne prend jamais la carte à votre place**. Deux Échos armés peuvent sortir ensemble. C'est vous qui choisissez.
+
+Le curseur monte jusqu'au nombre d'Orbes que vous possédez. Un budget inférieur au coût d'un tirage est refusé avec un message.
+
+La liste des Échos armés n'est pas sauvegardée. Elle est vide après un rechargement ou une nouvelle connexion.
+
+## 🌐 Partage
+
+### Builds publics
+
+1. Ouvrez le build dans l'éditeur. Sur l'onglet **Aperçu**, cliquez sur **Rendre public**, puis sur **Enregistrer**.
+2. Jouez un personnage du niveau 1 au niveau 80 avec ce build actif. Le build devient **Validé**.
+3. Un build public et validé est envoyé aux autres joueurs automatiquement.
+
+Modifier un build retire sa validation. Rejouez pour le valider de nouveau.
+
+Tout ce que contient un build public est partagé : poids, bonus, réglages d'automatisation, liste de bannissement et description.
+
+Pour parcourir les builds des autres :
+
+1. Cliquez sur **Builds publics**. La liste s'ouvre sur votre classe. Filtrez par classe et par spé.
+2. Cliquez sur **Importer** pour copier un build dans votre liste. La copie est privée et s'ouvre aussitôt.
+3. **Mettre à jour** apparaît quand l'auteur a publié une version plus récente d'un build que vous avez importé.
+4. **Actualiser** demande leurs builds aux autres joueurs. Il y a une attente de 30 secondes.
+
+Si vous modifiez un build qui vient d'un autre joueur, il devient le vôtre. L'auteur devient vous et la validation est retirée.
+
+### Import et export
+
+- **Exporter** (en bas à gauche de l'éditeur) affiche un texte. Copiez-le et donnez-le à un ami.
+- **Importer un build** (colonne de gauche) accepte un tel texte. Il accepte aussi une composition **EBH1** copiée depuis la fenêtre des Échos du jeu. Une composition EBH1 ne crée pas de build. Elle s'ajoute seulement à la note communautaire.
+
+## 📊 Suivre vos runs
+
+Ouvrez un build. Sa page a quatre onglets.
+
+- **Aperçu** : titre, auteur, spé, date, statut (public ou privé, validé ou non), Échos verrouillés et description.
+- **Stats** : Échos vus, runs terminés (niveau 80 atteint), runs recommencés, choix, relances, bannissements et gels utilisés, et la part de vos choix par rareté.
+- **Manquants** : les Échos de la classe du build que vous n'avez pas encore et que vous pouvez obtenir à votre niveau. Chaque ligne indique où trouver l'Écho. Les Échos verrouillés du build passent en premier.
+- **Journal** : une carte par run. Cliquez sur une carte pour voir chaque décision : heure, action, Échos proposés avec leur note, et vos Bannissements, Relances et Gels restants. **Exporter** donne le run sous forme de texte. **X** supprime un run. **Tout effacer** supprime tous les runs.
+
+Les statistiques et le journal enregistrent les actions de l'automatisation.
+
+Un run se termine quand votre personnage repasse au niveau 1. Les 25 derniers runs gardent chaque décision. Les runs plus anciens gardent un résumé. L'addon conserve 200 runs au maximum.
+
+## 🔧 Réglages et commandes
+
+- `/ebb` ou `/ebonbuilds` : ouvre ou ferme la fenêtre. `/ebb help` affiche la commande.
+- Bouton de la minicarte : cliquez pour ouvrir la fenêtre. Faites-le glisser pour le déplacer.
+- Icône d'engrenage en haut à droite de la fenêtre : les réglages.
+  - **Délai d'action** (de 0,1 à 3 secondes, 2 par défaut) : l'attente avant que l'automatisation agisse. Des valeurs très basses peuvent faire dysfonctionner l'addon.
+  - **Durée du bandeau** (de 0,1 à 3 secondes, 3 par défaut) : le temps pendant lequel le bandeau reste affiché.
+- `/eapi lang` : change la langue de l'addon.
 
 ## 📜 Licence et crédits
 
 Auteur original : **Sanavesa** — fork maintenu par **Siphelis**.
 
 Ce projet est distribué sous une licence composite (base MIT + PolyForm
-Noncommercial pour les modifications) — voir [LICENSE](https://github.com/Siphelis/EbonOrbReroll/blob/main/LICENSE)
+Noncommercial pour les modifications) — voir [LICENSE](https://github.com/Siphelis/EbonBuilds/blob/main/LICENSE)
 pour les détails.
 
 ---
