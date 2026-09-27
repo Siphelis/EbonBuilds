@@ -2,7 +2,7 @@
 
 **Planifiez vos builds d'Échos, laissez l'addon choisir vos Échos, et relancez les tirages d'Orbe jusqu'à obtenir l'Écho voulu.**
 
-EbonBuilds est un addon pour Project Ebonhold. Il vous aide avec les Échos de vos runs.
+[EbonBuilds](https://github.com/Siphelis/EbonBuilds) est un addon pour Project Ebonhold. Il vous aide avec les Échos de vos runs.
 
 [English](README.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
@@ -37,14 +37,14 @@ EbonBuilds est un addon pour Project Ebonhold. Il vous aide avec les Échos de v
 
 1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — téléchargez la dernière version.
 2. Décompressez le dossier `EbonBuilds` dans `Interface/AddOns/`.
-   Installez **EbonAPI** de la même façon s'il n'y est pas encore. EbonAPI est commun aux addons Ebonhold. EbonBuilds ne démarre pas sans lui.
-3. Dans l'écran de sélection des addons, vérifiez que **EbonBuilds** et **EbonAPI** sont cochés.
+   Installez [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) de la même façon s'il n'y est pas encore. [EbonAPI](https://github.com/Siphelis/EbonAPI) est commun aux addons Ebonhold. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) ne démarre pas sans lui.
+3. Dans l'écran de sélection des addons, vérifiez que [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds) et [**EbonAPI**](https://github.com/Siphelis/EbonAPI) sont cochés.
 
 L'addon utilise la langue de votre jeu : anglais, français, allemand ou espagnol. Pour la changer, tapez `/eapi lang` suivi de `enUS`, `frFR`, `deDE` ou `esES`.
 
 ## 🚀 Démarrage rapide
 
-1. Tapez `/ebb`, ou cliquez sur le bouton EbonBuilds de la minicarte. La fenêtre s'ouvre.
+1. Tapez `/ebb`, ou cliquez sur le bouton [EbonBuilds](https://github.com/Siphelis/EbonBuilds) de la minicarte. La fenêtre s'ouvre.
 2. Cliquez sur **+ Nouveau build**.
 3. Choisissez **Mode assistant** pour être guidé pas à pas, ou **Mode expert** pour aller directement à l'éditeur.
 4. Cliquez sur **Enregistrer**. Le build devient votre build actif. Son automatisation est activée.
@@ -188,7 +188,7 @@ Les étoiles sont une vue simple de la note communautaire. L'automatisation util
 
 ### Comment ça marche
 
-Sur un tirage d'Orbe, le serveur refuse la relance, le bannissement et le gel. EbonBuilds ajoute un panneau sous les cartes. Le panneau enchaîne deux actions que le jeu autorise déjà :
+Sur un tirage d'Orbe, le serveur refuse la relance, le bannissement et le gel. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) ajoute un panneau sous les cartes. Le panneau enchaîne deux actions que le jeu autorise déjà :
 
 1. Il prend l'une des cartes proposées. L'Écho est accordé.
 2. Il dépense des Orbes pour oublier cet Écho. Le jeu distribue trois nouvelles cartes.

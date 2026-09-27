@@ -2,7 +2,7 @@
 
 **Planifica tus builds de Ecos, deja que el addon elija tus Ecos y vuelve a tirar las tiradas de Orbe hasta que salga el Eco que quieres.**
 
-EbonBuilds es un addon para Project Ebonhold. Te ayuda con los Ecos de tus partidas.
+[EbonBuilds](https://github.com/Siphelis/EbonBuilds) es un addon para Project Ebonhold. Te ayuda con los Ecos de tus partidas.
 
 [English](README.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
@@ -37,14 +37,14 @@ EbonBuilds es un addon para Project Ebonhold. Te ayuda con los Ecos de tus parti
 
 1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — descarga la última versión.
 2. Descomprime la carpeta `EbonBuilds` en `Interface/AddOns/`.
-   Instala **EbonAPI** de la misma forma si aún no está. EbonAPI es común a los addons de Ebonhold. EbonBuilds no arranca sin él.
-3. En la pantalla de selección de addons, comprueba que **EbonBuilds** y **EbonAPI** están marcados.
+   Instala [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) de la misma forma si aún no está. [EbonAPI](https://github.com/Siphelis/EbonAPI) es común a los addons de Ebonhold. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) no arranca sin él.
+3. En la pantalla de selección de addons, comprueba que [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds) y [**EbonAPI**](https://github.com/Siphelis/EbonAPI) están marcados.
 
 El addon usa el idioma de tu juego: inglés, francés, alemán o español. Para cambiarlo, escribe `/eapi lang` seguido de `enUS`, `frFR`, `deDE` o `esES`.
 
 ## 🚀 Inicio rápido
 
-1. Escribe `/ebb`, o haz clic en el botón de EbonBuilds del minimapa. La ventana se abre.
+1. Escribe `/ebb`, o haz clic en el botón de [EbonBuilds](https://github.com/Siphelis/EbonBuilds) del minimapa. La ventana se abre.
 2. Haz clic en **+ Nuevo build**.
 3. Elige **Modo asistente** para que te guíen paso a paso, o **Modo experto** para ir directo al editor.
 4. Haz clic en **Guardar**. El build pasa a ser tu build activo. Su automatización está activada.
@@ -188,7 +188,7 @@ Las estrellas son una vista sencilla de la nota de la comunidad. La automatizaci
 
 ### Cómo funciona
 
-En una tirada de Orbe, el servidor rechaza relanzar, desterrar y congelar. EbonBuilds añade un panel bajo las cartas. El panel encadena dos acciones que el juego ya permite:
+En una tirada de Orbe, el servidor rechaza relanzar, desterrar y congelar. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) añade un panel bajo las cartas. El panel encadena dos acciones que el juego ya permite:
 
 1. Toma una de las cartas ofrecidas. El Eco se concede.
 2. Gasta Orbes para olvidar ese Eco. El juego reparte tres cartas nuevas.

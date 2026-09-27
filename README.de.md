@@ -2,7 +2,7 @@
 
 **Plane deine Echo-Builds, lass das Addon deine Echos wählen und zieh Züge mit Kugeln neu, bis das gewünschte Echo fällt.**
 
-EbonBuilds ist ein Addon für Project Ebonhold. Es hilft dir bei den Echos deiner Runs.
+[EbonBuilds](https://github.com/Siphelis/EbonBuilds) ist ein Addon für Project Ebonhold. Es hilft dir bei den Echos deiner Runs.
 
 [English](README.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
@@ -37,14 +37,14 @@ EbonBuilds ist ein Addon für Project Ebonhold. Es hilft dir bei den Echos deine
 
 1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — lade die neueste Version herunter.
 2. Entpacke den Ordner `EbonBuilds` nach `Interface/AddOns/`.
-   Installiere **EbonAPI** auf dieselbe Weise, falls es noch fehlt. EbonAPI wird von den Ebonhold-Addons gemeinsam genutzt. Ohne EbonAPI startet EbonBuilds nicht.
-3. Prüfe im Addon-Auswahlbildschirm, dass **EbonBuilds** und **EbonAPI** angehakt sind.
+   Installiere [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) auf dieselbe Weise, falls es noch fehlt. [EbonAPI](https://github.com/Siphelis/EbonAPI) wird von den Ebonhold-Addons gemeinsam genutzt. Ohne [EbonAPI](https://github.com/Siphelis/EbonAPI) startet [EbonBuilds](https://github.com/Siphelis/EbonBuilds) nicht.
+3. Prüfe im Addon-Auswahlbildschirm, dass [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds) und [**EbonAPI**](https://github.com/Siphelis/EbonAPI) angehakt sind.
 
 Das Addon nutzt die Sprache deines Spiels: Englisch, Französisch, Deutsch oder Spanisch. Zum Ändern tippe `/eapi lang` gefolgt von `enUS`, `frFR`, `deDE` oder `esES`.
 
 ## 🚀 Schnellstart
 
-1. Tippe `/ebb` oder klicke auf den EbonBuilds-Knopf an der Minikarte. Das Fenster öffnet sich.
+1. Tippe `/ebb` oder klicke auf den [EbonBuilds](https://github.com/Siphelis/EbonBuilds)-Knopf an der Minikarte. Das Fenster öffnet sich.
 2. Klicke auf **+ Neuer Build**.
 3. Wähle **Assistent**, um Schritt für Schritt geführt zu werden, oder **Profi-Modus**, um direkt zum Editor zu gehen.
 4. Klicke auf **Speichern**. Der Build wird dein aktiver Build. Seine Automatik ist an.
@@ -188,7 +188,7 @@ Die Sterne sind eine einfache Ansicht der Gemeinschaftsnote. Die Automatik nutzt
 
 ### So funktioniert es
 
-Bei einem Kugel-Zug verweigert der Server Neuziehen, Verbannen und Einfrieren. EbonBuilds fügt unter den Karten ein Panel hinzu. Das Panel verkettet zwei Aktionen, die das Spiel schon erlaubt:
+Bei einem Kugel-Zug verweigert der Server Neuziehen, Verbannen und Einfrieren. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) fügt unter den Karten ein Panel hinzu. Das Panel verkettet zwei Aktionen, die das Spiel schon erlaubt:
 
 1. Es nimmt eine der angebotenen Karten. Das Echo wird gewährt.
 2. Es gibt Kugeln aus, um dieses Echo zu vergessen. Das Spiel teilt drei neue Karten aus.

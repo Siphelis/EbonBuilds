@@ -2,7 +2,7 @@
 
 **Plan your Echo builds, let the addon choose your Echoes, and reroll Orb draws until the Echo you want is dealt.**
 
-EbonBuilds is an addon for Project Ebonhold. It helps you with the Echoes of your runs.
+[EbonBuilds](https://github.com/Siphelis/EbonBuilds) is an addon for Project Ebonhold. It helps you with the Echoes of your runs.
 
 [English](README.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
@@ -37,14 +37,14 @@ EbonBuilds is an addon for Project Ebonhold. It helps you with the Echoes of you
 
 1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — download the latest version.
 2. Unzip the `EbonBuilds` folder into `Interface/AddOns/`.
-   Install **EbonAPI** the same way if it is not there yet. EbonAPI is shared by the Ebonhold addons. EbonBuilds does not start without it.
-3. On the AddOns selection screen, check that **EbonBuilds** and **EbonAPI** are ticked.
+   Install [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) the same way if it is not there yet. [EbonAPI](https://github.com/Siphelis/EbonAPI) is shared by the Ebonhold addons. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) does not start without it.
+3. On the AddOns selection screen, check that [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds) and [**EbonAPI**](https://github.com/Siphelis/EbonAPI) are ticked.
 
 The addon uses the language of your game: English, French, German or Spanish. To change it, type `/eapi lang` followed by `enUS`, `frFR`, `deDE` or `esES`.
 
 ## 🚀 Getting started
 
-1. Type `/ebb`, or click the EbonBuilds button on the minimap. The window opens.
+1. Type `/ebb`, or click the [EbonBuilds](https://github.com/Siphelis/EbonBuilds) button on the minimap. The window opens.
 2. Click **+ New Build**.
 3. Choose **Wizard Mode** to be guided step by step, or **Pro Mode** to go straight to the editor.
 4. Click **Save**. The build becomes your active build. Its automation is on.
@@ -188,7 +188,7 @@ The stars are a simple view of the community rating. The automation uses the fin
 
 ### How it works
 
-On an Orb draw, the server refuses to reroll, banish and freeze. EbonBuilds adds a panel under the cards. The panel chains two actions the game already allows:
+On an Orb draw, the server refuses to reroll, banish and freeze. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) adds a panel under the cards. The panel chains two actions the game already allows:
 
 1. It takes one of the offered cards. The Echo is granted.
 2. It spends Orbs to forget that Echo. The game deals three new cards.
