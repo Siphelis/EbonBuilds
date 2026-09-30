@@ -26,21 +26,21 @@
 
 ## ✨ What it does
 
-- **Builds.** Write a plan for each build: the Echoes you aim for and how much you want each one.
-- **Stars.** Every Echo gets 1 to 3 stars for your class. They appear on the draw cards, in the game's Echo journal and in your saved builds.
+- **Builds.** Write a plan for each build: the Echoes you aim for and how much you want each one. Open a build from **Saved Builds** or **Player Builds** to see all its Echoes, like in the game's Echo journal.
+- **Stars.** Every Echo gets 1 to 3 stars for your class. They appear on the draw cards, in the game's Echo journal and in the detail window of a build of your class.
 - **Automation.** At each draw, the addon can pick, banish, reroll or freeze for you, following your active build.
 - **Orb reroll and hunt.** On an Orb draw, the addon can reroll with an Orb. It can also repeat until an Echo you marked is dealt.
-- **Sharing.** Share your builds with other players, import theirs, and benefit from what the community keeps and bans.
+- **Sharing.** The builds in your game's build slots are shared automatically. Browse the builds of other players and add one of your class to your wishlists. Benefit from what the community keeps and bans.
 - **Run follow-up.** See statistics per build, the Echoes you still miss, and a logbook of every decision.
 
 ## 📦 Installation
 
 1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — download the latest version.
 2. Unzip the `EbonBuilds` folder into `Interface/AddOns/`.
-   Install [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) the same way if it is not there yet. [EbonAPI](https://github.com/Siphelis/EbonAPI) is shared by the Ebonhold addons. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) does not start without it.
+   Install or update [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) the same way. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) needs [EbonAPI](https://github.com/Siphelis/EbonAPI) 2.0.0 or newer. [EbonAPI](https://github.com/Siphelis/EbonAPI) is shared by the Ebonhold addons. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) does not start without it.
 3. On the AddOns selection screen, check that [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds) and [**EbonAPI**](https://github.com/Siphelis/EbonAPI) are ticked.
 
-The addon uses the language of your game: English, French, German or Spanish. To change it, type `/eapi lang` followed by `enUS`, `frFR`, `deDE` or `esES`.
+The addon uses the language of your game: English, French, German or Spanish. To change it, press Esc and click **EbonAPI**. On the **General** page, choose it in the **Language** list.
 
 ## 🚀 Getting started
 
@@ -60,11 +60,45 @@ You only want the stars and no automation? Click **Automation: ON** on the build
 
 The left column holds:
 
-- **Saved Builds**: the builds stored by the game itself, with their Echoes and stars.
-- **Public Builds**: the builds shared by other players.
-- **Import Build**: adds a build from a text.
+- **Saved Builds**: the builds and wishlists stored by the game itself.
+- **Player Builds**: the builds shared by other players.
 - **+ New Build**: creates a build.
 - Your builds. Click one to open it. It becomes your active build for this character. The automation follows the active build.
+
+In **Saved Builds**, each build is a card with its slot number, its name, its number of Echoes and its locked Echoes. A green **>** marks the game's active build.
+
+### The detail window
+
+Click a card in **Saved Builds** or **Player Builds**. Its detail window opens beside the main window. It closes with the main window, or when you leave the list.
+
+- The header shows the class, the number of Echoes and the families of the build. Each family gives its number of Echoes, for example **Tank (3)**. Echoes without a family are under **No family**.
+- Below the header, a row of slots shows the locked Echoes. If the player did not send them, a line says so. The row has as many slots as you have unlocked in the game.
+- Then a grid shows every Echo of the build, like the game's Echo journal. The rarest come first.
+
+In the grid:
+
+- Each Echo has one cell, whatever its rarities. A small disc gives the stacks of each rarity, for up to three rarities.
+- A lock marks a locked Echo. Its name is in gold.
+- A book marks an Echo that needs a tome.
+- A halo turns behind each icon, in the colour of its rarity. It is gold on a locked Echo.
+- On a build of your class, the tooltip shows the stars of the Echo, as in the game's Echo journal.
+
+To filter the grid:
+
+1. Tick a family in the header. The grid shows only its Echoes.
+2. Tick more families to add their Echoes. An Echo shows if it belongs to one of them.
+3. Untick them all to see every Echo again.
+
+The row of locked Echoes is never filtered. The families you ticked stay when you open another build. They are cleared when the window closes.
+
+To add a player build to your wishlists:
+
+1. Open a build of your class from **Player Builds**.
+2. Click **Add to my wishlist** at the bottom.
+3. Type a name, or keep the one offered.
+4. Confirm.
+
+The build goes to the server as a new wishlist, with its Echoes and its locked Echoes. The chat confirms when it is created. You then find it among your wishlists in the game's Echo journal, and in **Saved Builds**. On a build of another class, the button stays grey: a wishlist is always for your own class.
 
 ### Wizard Mode
 
@@ -85,14 +119,14 @@ Click **Edit Build** on a build page. The editor has four tabs.
 
 | Tab | What you set |
 | --- | --- |
-| **Overview** | Class, spec, title, description, locked Echoes and the **Make Public** switch. |
+| **Overview** | Class, spec, title, description and locked Echoes. |
 | **Echoes** | A weight for each Echo. |
 | **Bonus** | Extra points by rarity, by family and for new Echoes. |
 | **Automation** | Bans, protections and thresholds. See [Automation](#-automation). |
 
 **Save** keeps your changes. **Cancel** drops them. **Export** (bottom left) gives the build as a text.
 
-**Locked Echoes** are the permanent Echoes your build aims for. There are 6 slots. Click a slot to choose an Echo. Right-click to empty it.
+**Locked Echoes** are the permanent Echoes your build aims for. There are as many slots as you have unlocked in the game, up to 6. Click a slot to choose an Echo. Right-click to empty it.
 
 The **description** can hold Echo links. Click **+ Insert Echo Link**.
 
@@ -125,12 +159,12 @@ The **description** can hold Echo links. Click **+ Insert Echo Link**.
 
 1. In the game's Echo journal, hover an Echo. The line **Interest for** your class shows the stars. When the community knows the Echo, a second line **Goes well with** lists up to three Echoes often kept with it.
 2. On a draw, under the icon of each card.
-3. In **Saved Builds**, under each Echo.
+3. Click a card in **Saved Builds** or **Player Builds**. In the detail window that opens, hover an Echo. The tooltip shows the same lines as in the journal. This works only for a build of your class.
 
 ### How the rating is made
 
 1. Each Echo starts from its rarity. The rarer it is, the higher it starts.
-2. The addon then reads the builds of your class: yours, the ones you imported and the ones received from other players. The more builds keep an Echo, the higher it goes.
+2. The addon then reads the builds of your class: your **Saved Builds** and the **Player Builds**. The more builds keep an Echo, the higher it goes.
 3. On draw cards and in the tooltip, builds that look like your current run weigh more. An Echo that fits what you already own goes up.
 4. Ban lists pull an Echo down. Once three players' ban lists are known, an Echo banned by half of them or more gets grey stars. An Echo banned by a fifth of them or more loses one star.
 5. Each player counts once, whatever their number of builds.
@@ -178,9 +212,9 @@ The note goes from -5 (everyone refuses the Echo) to +3 (everyone keeps it). An 
 Two more things to know:
 
 1. Each rarity adds a small bonus to the note. Rarer Echoes come first when notes are close.
-2. If the community knows none of the offered Echoes, the addon uses your weights for that draw.
+2. **Community matrix** needs three builds of your class among your **Saved Builds** and the **Player Builds**, or three players' ban lists. Until then, the addon works as with **Manual weights**.
 
-With **Manual weights**, the thresholds are percentages of the **Peak**: the best score possible for your class with your bonuses.
+With **Manual weights**, the thresholds are percentages of the **Peak**: the best score possible for your class with your bonuses. In this mode, the reroll compares the total score of the offered Echoes, not the best one.
 
 The stars are a simple view of the community rating. The automation uses the finer note, from -5 to +3.
 
@@ -221,7 +255,7 @@ A draw costs 1 Orb by default. The cost follows the game's own quality slider, a
 ### Hunt
 
 1. Open the game's Echo journal.
-2. **Ctrl+click** the Echoes you want. A golden frame marks them. Ctrl+click again to remove one. It works in both lists: the catalog and the Echoes of your run.
+2. **Ctrl+click** the Echoes you want. A golden frame marks them. Ctrl+click again to remove one. It works in both lists: the catalog and the Echoes of your run. The tooltip of an Echo reminds you: **Ctrl+click: hunt this Echo**, or **Ctrl+click: stop hunting** once it is marked.
 3. In Ebonhold's options, turn **auto-accept loadout echoes** off. The hunt does not start while it is on.
 4. If the automation is on, switch on **Hunt** at the top right of the journal. While it is on, the automation leaves the draws to you. It stays on until you switch it off.
 5. On an Orb draw, set the slider to the number of Orbs you accept to spend. The label tells how many draws it pays.
@@ -247,35 +281,35 @@ The list of armed Echoes is not saved. It is empty after a reload or a new login
 
 ## 🌐 Sharing
 
-### Public builds
+### Player builds
 
-1. Open the build in the editor. On the **Overview** tab, click **Make Public**, then **Save**.
-2. Play a character from level 1 to 80 with this build active. The build becomes **Validated**.
-3. A public and validated build is sent to other players automatically.
+The builds in your game's build slots are shared with other players automatically. There is nothing to switch on. No setting turns sharing off.
 
-Changing a build removes its validation. Play again to validate it.
-
-Everything in a public build is shared: weights, bonuses, automation settings, ban list and description.
+- From each of these builds, only the Echoes are shared: their rarity, their stacks and which ones are locked. The build name is not sent.
+- From your builds in the left column, only the ban lists of your class are shared. They count in the community rating.
+- Your weights, bonuses, other automation settings and descriptions are not shared.
 
 To browse the builds of others:
 
-1. Click **Public Builds**. The list opens on your class. Filter by class and spec.
-2. Click **Import** to copy a build into your list. The copy is private and opens at once.
-3. **Update** appears when the author published a newer version of a build you imported.
+1. Click **Player Builds**. The list opens on your class. Choose another class, or **All Classes**.
+2. Each card shows the class, the number of Echoes and the locked Echoes. No player name is shown. The builds with the most Echoes come first.
+3. Click a card to open its detail window. On a build of your class, **Add to my wishlist** sends it to the server as a new wishlist.
 4. **Reload** asks other players for their builds. It has a 30 second wait.
 
-If you edit a build that comes from another player, it becomes yours. The author changes to you and the validation is removed.
+The list fills by itself as other players share their builds. It keeps them from one session to the next.
 
 ### Import and export
 
 - **Export** (bottom left of the editor) shows a text. Copy it and give it to a friend.
-- **Import Build** (left column) takes such a text. It also takes an **EBH1** composition copied from the game's Echoes window. An EBH1 composition does not create a build. It only adds to the community rating.
+- Import comes back in a future update.
+
+If you edit a build that comes from another player, it becomes yours. The author changes to you.
 
 ## 📊 Follow your runs
 
 Open a build. Its page has four tabs.
 
-- **Overview**: title, author, spec, date, status (public or private, validated or not), locked Echoes and description.
+- **Overview**: title, author, spec, date, locked Echoes and description.
 - **Stats**: Echoes seen, runs completed (level 80 reached), runs reset, picks, rerolls, banishes and freezes used, and the share of your picks by rarity.
 - **Missing**: the Echoes of the build's class that you do not own yet and can get at your level. Each line shows where to find the Echo. The locked Echoes of the build come first.
 - **Logbook**: one card per run. Click a card to see each decision: time, action, offered Echoes with their notes, and your remaining Banishes, Rerolls and Freezes. **Export** gives the run as a text. **X** deletes a run. **Clear All** deletes every run.
@@ -287,11 +321,15 @@ A run ends when your character is back at level 1. The 25 latest runs keep every
 ## 🔧 Settings and commands
 
 - `/ebb` or `/ebonbuilds`: opens or closes the window. `/ebb help` prints the command.
-- Minimap button: click to open the window. Drag to move it.
-- Gear icon at the top right of the window: the settings.
+- Minimap button: click to open the window. Drag to move it. Its options are on the **Connected addons** page of the [EbonAPI](https://github.com/Siphelis/EbonAPI) window (press Esc and click **EbonAPI**):
+  - **Minimap button**: **On the minimap**, **In the EbonAPI button** or **Hidden**.
+  - **Lock its position**: the button no longer moves.
+  - **Reset its position**: the button goes back to its starting place.
+- Gear icon next to the close button of the window: the settings. They open on the [EbonBuilds](https://github.com/Siphelis/EbonBuilds) page of the [EbonAPI](https://github.com/Siphelis/EbonAPI) window.
   - **Action delay** (0.1 to 3 seconds, 2 by default): the wait before the automation acts. Very low values can make the addon fail.
   - **Toast duration** (0.1 to 3 seconds, 3 by default): how long the banner stays.
-- `/eapi lang`: changes the language of the addon.
+- The addon's windows follow the look chosen on the **Appearance** page of the [EbonAPI](https://github.com/Siphelis/EbonAPI) window.
+- **Language**, on the **General** page of the [EbonAPI](https://github.com/Siphelis/EbonAPI) window: changes the language of the addon.
 
 ## 📜 License & credits
 

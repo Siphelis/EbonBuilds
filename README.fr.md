@@ -26,21 +26,21 @@
 
 ## ✨ Fonctionnalités
 
-- **Builds.** Écrivez un plan pour chaque build : les Échos visés et l'envie que vous avez de chacun.
-- **Étoiles.** Chaque Écho reçoit de 1 à 3 étoiles pour votre classe. Elles apparaissent sur les cartes du tirage, dans le journal des Échos du jeu et dans vos builds enregistrés.
+- **Builds.** Écrivez un plan pour chaque build : les Échos visés et l'envie que vous avez de chacun. Ouvrez un build depuis **Builds enregistrés** ou **Builds des joueurs** pour voir tous ses Échos, comme dans le journal des Échos du jeu.
+- **Étoiles.** Chaque Écho reçoit de 1 à 3 étoiles pour votre classe. Elles apparaissent sur les cartes du tirage, dans le journal des Échos du jeu et dans la fenêtre de détail d'un build de votre classe.
 - **Automatisation.** À chaque tirage, l'addon peut choisir, bannir, relancer ou geler à votre place, selon votre build actif.
 - **Relance à l'Orbe et chasse.** Sur un tirage d'Orbe, l'addon peut relancer avec une Orbe. Il peut aussi recommencer jusqu'à ce qu'un Écho que vous avez marqué sorte.
-- **Partage.** Partagez vos builds avec les autres joueurs, importez les leurs, et profitez de ce que la communauté garde et bannit.
+- **Partage.** Les builds que le jeu mémorise dans vos emplacements de build sont partagés automatiquement. Parcourez les builds des autres joueurs et ajoutez-en un de votre classe à vos wishlists. Profitez de ce que la communauté garde et bannit.
 - **Suivi des runs.** Consultez des statistiques par build, les Échos qu'il vous manque, et un journal de chaque décision.
 
 ## 📦 Installation
 
 1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — téléchargez la dernière version.
 2. Décompressez le dossier `EbonBuilds` dans `Interface/AddOns/`.
-   Installez [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) de la même façon s'il n'y est pas encore. [EbonAPI](https://github.com/Siphelis/EbonAPI) est commun aux addons Ebonhold. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) ne démarre pas sans lui.
+   Installez ou mettez à jour [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) de la même façon. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) nécessite [EbonAPI](https://github.com/Siphelis/EbonAPI) 2.0.0 ou une version plus récente. [EbonAPI](https://github.com/Siphelis/EbonAPI) est commun aux addons Ebonhold. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) ne démarre pas sans lui.
 3. Dans l'écran de sélection des addons, vérifiez que [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds) et [**EbonAPI**](https://github.com/Siphelis/EbonAPI) sont cochés.
 
-L'addon utilise la langue de votre jeu : anglais, français, allemand ou espagnol. Pour la changer, tapez `/eapi lang` suivi de `enUS`, `frFR`, `deDE` ou `esES`.
+L'addon utilise la langue de votre jeu : anglais, français, allemand ou espagnol. Pour la changer, appuyez sur Échap et cliquez sur **EbonAPI**. Sur la page **Général**, choisissez-la dans la liste **Langue**.
 
 ## 🚀 Démarrage rapide
 
@@ -60,11 +60,45 @@ Vous voulez seulement les étoiles, sans automatisation ? Cliquez sur **Automati
 
 La colonne de gauche contient :
 
-- **Builds enregistrés** : les builds mémorisés par le jeu lui-même, avec leurs Échos et leurs étoiles.
-- **Builds publics** : les builds partagés par les autres joueurs.
-- **Importer un build** : ajoute un build à partir d'un texte.
+- **Builds enregistrés** : les builds et les wishlists mémorisés par le jeu lui-même.
+- **Builds des joueurs** : les builds partagés par les autres joueurs.
 - **+ Nouveau build** : crée un build.
 - Vos builds. Cliquez sur l'un d'eux pour l'ouvrir. Il devient votre build actif pour ce personnage. L'automatisation suit le build actif.
+
+Dans **Builds enregistrés**, chaque build est une carte avec son numéro d'emplacement, son nom, son nombre d'Échos et ses Échos verrouillés. Un **>** vert marque le build actif du jeu.
+
+### La fenêtre de détail
+
+Cliquez sur une carte dans **Builds enregistrés** ou **Builds des joueurs**. Sa fenêtre de détail s'ouvre à côté de la fenêtre principale. Elle se ferme avec la fenêtre principale, ou quand vous quittez la liste.
+
+- L'en-tête montre la classe, le nombre d'Échos et les familles du build. Chaque famille indique son nombre d'Échos, par exemple **Tank (3)**. Les Échos sans famille sont rangés sous **Sans famille**.
+- Sous l'en-tête, une rangée d'emplacements montre les Échos verrouillés. Si le joueur ne les a pas transmis, une ligne le signale. La rangée a autant d'emplacements que vous en avez débloqué dans le jeu.
+- Ensuite, une grille montre chaque Écho du build, comme le journal des Échos du jeu. Les plus rares passent en premier.
+
+Dans la grille :
+
+- Chaque Écho a une seule case, quelles que soient ses raretés. Un petit disque donne les piles de chaque rareté, pour trois raretés au plus.
+- Un cadenas marque un Écho verrouillé. Son nom est doré.
+- Un livre marque un Écho qui demande un tome.
+- Un halo tourne derrière chaque icône, dans la couleur de sa rareté. Il est doré sur un Écho verrouillé.
+- Sur un build de votre classe, l'infobulle montre les étoiles de l'Écho, comme dans le journal des Échos du jeu.
+
+Pour filtrer la grille :
+
+1. Cochez une famille dans l'en-tête. La grille ne montre plus que ses Échos.
+2. Cochez d'autres familles pour ajouter leurs Échos. Un Écho s'affiche s'il appartient à l'une d'elles.
+3. Décochez-les toutes pour revoir tous les Échos.
+
+La rangée des Échos verrouillés n'est jamais filtrée. Les familles cochées restent quand vous ouvrez un autre build. Elles sont décochées quand la fenêtre se ferme.
+
+Pour ajouter un build d'un joueur à vos wishlists :
+
+1. Ouvrez un build de votre classe depuis **Builds des joueurs**.
+2. Cliquez sur **Ajouter à ma wishlist** en bas.
+3. Tapez un nom, ou gardez celui qui est proposé.
+4. Confirmez.
+
+Le build part au serveur comme une nouvelle wishlist, avec ses Échos et ses Échos verrouillés. Le chat confirme sa création. Vous la retrouvez ensuite parmi vos wishlists dans le journal des Échos du jeu, et dans **Builds enregistrés**. Sur un build d'une autre classe, le bouton reste grisé : une wishlist est toujours pour votre propre classe.
 
 ### Mode assistant
 
@@ -85,14 +119,14 @@ Cliquez sur **Modifier** sur la page d'un build. L'éditeur a quatre onglets.
 
 | Onglet | Ce que vous réglez |
 | --- | --- |
-| **Aperçu** | Classe, spé, titre, description, Échos verrouillés et l'interrupteur **Rendre public**. |
+| **Aperçu** | Classe, spé, titre, description et Échos verrouillés. |
 | **Échos** | Un poids pour chaque Écho. |
 | **Bonus** | Des points en plus par rareté, par famille et pour les Échos nouveaux. |
 | **Automatisation** | Bannissements, protections et seuils. Voir [Automatisation](#-automatisation). |
 
 **Enregistrer** conserve vos changements. **Annuler** les abandonne. **Exporter** (en bas à gauche) donne le build sous forme de texte.
 
-Les **Échos verrouillés** sont les Échos permanents que votre build vise. Il y a 6 emplacements. Cliquez sur un emplacement pour choisir un Écho. Faites un clic droit pour le vider.
+Les **Échos verrouillés** sont les Échos permanents que votre build vise. Il y a autant d'emplacements que vous en avez débloqué dans le jeu, 6 au plus. Cliquez sur un emplacement pour choisir un Écho. Faites un clic droit pour le vider.
 
 La **description** peut contenir des liens d'Échos. Cliquez sur **+ Lien d'Écho**.
 
@@ -125,12 +159,12 @@ La **description** peut contenir des liens d'Échos. Cliquez sur **+ Lien d'Éch
 
 1. Dans le journal des Échos du jeu, survolez un Écho. La ligne **Intérêt pour** votre classe affiche les étoiles. Quand la communauté connaît l'Écho, une deuxième ligne **Va bien avec** cite jusqu'à trois Échos souvent gardés avec lui.
 2. Sur un tirage, sous l'icône de chaque carte.
-3. Dans **Builds enregistrés**, sous chaque Écho.
+3. Cliquez sur une carte dans **Builds enregistrés** ou **Builds des joueurs**. Dans la fenêtre de détail qui s'ouvre, survolez un Écho. L'infobulle affiche les mêmes lignes que dans le journal. Cela ne marche que pour un build de votre classe.
 
 ### Comment la note est calculée
 
 1. Chaque Écho part de sa rareté. Plus il est rare, plus il part haut.
-2. L'addon lit ensuite les builds de votre classe : les vôtres, ceux que vous avez importés et ceux reçus des autres joueurs. Plus il y a de builds qui gardent un Écho, plus il monte.
+2. L'addon lit ensuite les builds de votre classe : vos **Builds enregistrés** et les **Builds des joueurs**. Plus il y a de builds qui gardent un Écho, plus il monte.
 3. Sur les cartes du tirage et dans l'infobulle, les builds qui ressemblent à votre run actuel pèsent plus lourd. Un Écho qui va avec ce que vous possédez déjà monte.
 4. Les listes de bannissement font baisser un Écho. Dès que les listes de trois joueurs sont connues, un Écho banni par la moitié d'entre eux ou plus reçoit des étoiles grises. Un Écho banni par un cinquième d'entre eux ou plus perd une étoile.
 5. Chaque joueur compte pour un, quel que soit son nombre de builds.
@@ -178,9 +212,9 @@ La note va de -5 (tout le monde refuse l'Écho) à +3 (tout le monde le garde). 
 Deux autres points à connaître :
 
 1. Chaque rareté ajoute un petit bonus à la note. Les Échos plus rares passent devant quand les notes sont proches.
-2. Si la communauté ne connaît aucun des Échos proposés, l'addon utilise vos poids pour ce tirage.
+2. La **Matrice commune** a besoin de trois builds de votre classe parmi vos **Builds enregistrés** et les **Builds des joueurs**, ou des listes de bannissement de trois joueurs. D'ici là, l'addon fonctionne comme avec **Poids manuels**.
 
-Avec **Poids manuels**, les seuils sont des pourcentages du **Pic** : la meilleure note possible pour votre classe avec vos bonus.
+Avec **Poids manuels**, les seuils sont des pourcentages du **Pic** : la meilleure note possible pour votre classe avec vos bonus. Dans ce mode, la relance compare la note totale des Échos proposés, et non la meilleure note.
 
 Les étoiles sont une vue simple de la note communautaire. L'automatisation utilise la note plus fine, de -5 à +3.
 
@@ -221,7 +255,7 @@ Un tirage coûte 1 Orbe par défaut. Le coût suit le curseur de qualité du jeu
 ### La chasse
 
 1. Ouvrez le journal des Échos du jeu.
-2. Faites **Ctrl+clic** sur les Échos que vous voulez. Un contour doré les marque. Refaites Ctrl+clic pour en retirer un. Cela marche dans les deux listes : le catalogue et les Échos de votre run.
+2. Faites **Ctrl+clic** sur les Échos que vous voulez. Un contour doré les marque. Refaites Ctrl+clic pour en retirer un. Cela marche dans les deux listes : le catalogue et les Échos de votre run. L'infobulle d'un Écho vous le rappelle : **Ctrl+clic : chasser cet Écho**, ou **Ctrl+clic : ne plus chasser** une fois qu'il est marqué.
 3. Dans les options d'Ebonhold, désactivez **auto-accept loadout echoes**. La chasse ne démarre pas tant que cette option est activée.
 4. Si l'automatisation est activée, allumez **Chasse** en haut à droite du journal. Tant qu'il est allumé, l'automatisation vous laisse les tirages. Il reste allumé jusqu'à ce que vous l'éteigniez.
 5. Sur un tirage d'Orbe, réglez le curseur sur le nombre d'Orbes que vous acceptez de dépenser. L'étiquette indique combien de tirages cela paie.
@@ -247,35 +281,35 @@ La liste des Échos armés n'est pas sauvegardée. Elle est vide après un recha
 
 ## 🌐 Partage
 
-### Builds publics
+### Builds des joueurs
 
-1. Ouvrez le build dans l'éditeur. Sur l'onglet **Aperçu**, cliquez sur **Rendre public**, puis sur **Enregistrer**.
-2. Jouez un personnage du niveau 1 au niveau 80 avec ce build actif. Le build devient **Validé**.
-3. Un build public et validé est envoyé aux autres joueurs automatiquement.
+Les builds que le jeu mémorise dans vos emplacements de build sont partagés automatiquement avec les autres joueurs. Il n'y a rien à activer. Aucun réglage ne désactive le partage.
 
-Modifier un build retire sa validation. Rejouez pour le valider de nouveau.
-
-Tout ce que contient un build public est partagé : poids, bonus, réglages d'automatisation, liste de bannissement et description.
+- De chacun de ces builds, seuls les Échos sont partagés : leur rareté, leurs piles et lesquels sont verrouillés. Le nom du build n'est pas envoyé.
+- De vos builds de la colonne de gauche, seules les listes de bannissement sont partagées, et seulement pour les builds de votre classe. Elles comptent dans la note communautaire.
+- Vos poids, vos bonus, vos autres réglages d'automatisation et vos descriptions ne sont pas partagés.
 
 Pour parcourir les builds des autres :
 
-1. Cliquez sur **Builds publics**. La liste s'ouvre sur votre classe. Filtrez par classe et par spé.
-2. Cliquez sur **Importer** pour copier un build dans votre liste. La copie est privée et s'ouvre aussitôt.
-3. **Mettre à jour** apparaît quand l'auteur a publié une version plus récente d'un build que vous avez importé.
+1. Cliquez sur **Builds des joueurs**. La liste s'ouvre sur votre classe. Choisissez une autre classe, ou **Toutes les classes**.
+2. Chaque carte montre la classe, le nombre d'Échos et les Échos verrouillés. Aucun nom de joueur n'est affiché. Les builds qui ont le plus d'Échos passent en premier.
+3. Cliquez sur une carte pour ouvrir sa fenêtre de détail. Sur un build de votre classe, **Ajouter à ma wishlist** l'envoie au serveur comme une nouvelle wishlist.
 4. **Actualiser** demande leurs builds aux autres joueurs. Il y a une attente de 30 secondes.
 
-Si vous modifiez un build qui vient d'un autre joueur, il devient le vôtre. L'auteur devient vous et la validation est retirée.
+La liste se remplit d'elle-même à mesure que les autres joueurs partagent leurs builds. Elle les garde d'une session à l'autre.
 
 ### Import et export
 
 - **Exporter** (en bas à gauche de l'éditeur) affiche un texte. Copiez-le et donnez-le à un ami.
-- **Importer un build** (colonne de gauche) accepte un tel texte. Il accepte aussi une composition **EBH1** copiée depuis la fenêtre des Échos du jeu. Une composition EBH1 ne crée pas de build. Elle s'ajoute seulement à la note communautaire.
+- L'import revient dans une prochaine mise à jour.
+
+Si vous modifiez un build qui vient d'un autre joueur, il devient le vôtre. L'auteur devient vous.
 
 ## 📊 Suivre vos runs
 
 Ouvrez un build. Sa page a quatre onglets.
 
-- **Aperçu** : titre, auteur, spé, date, statut (public ou privé, validé ou non), Échos verrouillés et description.
+- **Aperçu** : titre, auteur, spé, date, Échos verrouillés et description.
 - **Stats** : Échos vus, runs terminés (niveau 80 atteint), runs recommencés, choix, relances, bannissements et gels utilisés, et la part de vos choix par rareté.
 - **Manquants** : les Échos de la classe du build que vous n'avez pas encore et que vous pouvez obtenir à votre niveau. Chaque ligne indique où trouver l'Écho. Les Échos verrouillés du build passent en premier.
 - **Journal** : une carte par run. Cliquez sur une carte pour voir chaque décision : heure, action, Échos proposés avec leur note, et vos Bannissements, Relances et Gels restants. **Exporter** donne le run sous forme de texte. **X** supprime un run. **Tout effacer** supprime tous les runs.
@@ -287,11 +321,15 @@ Un run se termine quand votre personnage repasse au niveau 1. Les 25 derniers ru
 ## 🔧 Réglages et commandes
 
 - `/ebb` ou `/ebonbuilds` : ouvre ou ferme la fenêtre. `/ebb help` affiche la commande.
-- Bouton de la minicarte : cliquez pour ouvrir la fenêtre. Faites-le glisser pour le déplacer.
-- Icône d'engrenage en haut à droite de la fenêtre : les réglages.
+- Bouton de la minicarte : cliquez pour ouvrir la fenêtre. Faites-le glisser pour le déplacer. Ses options sont sur la page **Addons connectés** de la fenêtre d'[EbonAPI](https://github.com/Siphelis/EbonAPI) (appuyez sur Échap et cliquez sur **EbonAPI**) :
+  - **Bouton de la minimap** : **Sur la minimap**, **Dans le bouton d'EbonAPI** ou **Masqué**.
+  - **Verrouiller sa position** : le bouton ne se déplace plus.
+  - **Remettre à sa place** : le bouton revient à son emplacement de départ.
+- Icône d'engrenage à côté du bouton de fermeture de la fenêtre : les réglages. Ils s'ouvrent sur la page [EbonBuilds](https://github.com/Siphelis/EbonBuilds) de la fenêtre d'[EbonAPI](https://github.com/Siphelis/EbonAPI).
   - **Délai d'action** (de 0,1 à 3 secondes, 2 par défaut) : l'attente avant que l'automatisation agisse. Des valeurs très basses peuvent faire dysfonctionner l'addon.
   - **Durée du bandeau** (de 0,1 à 3 secondes, 3 par défaut) : le temps pendant lequel le bandeau reste affiché.
-- `/eapi lang` : change la langue de l'addon.
+- Les fenêtres de l'addon suivent le style choisi sur la page **Apparence** de la fenêtre d'[EbonAPI](https://github.com/Siphelis/EbonAPI).
+- **Langue**, sur la page **Général** de la fenêtre d'[EbonAPI](https://github.com/Siphelis/EbonAPI) : change la langue de l'addon.
 
 ## 📜 Licence et crédits
 

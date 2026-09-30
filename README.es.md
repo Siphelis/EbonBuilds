@@ -26,21 +26,21 @@
 
 ## ✨ Funciones
 
-- **Builds.** Escribe un plan para cada build: los Ecos que buscas y cuánto quieres cada uno.
-- **Estrellas.** Cada Eco recibe de 1 a 3 estrellas para tu clase. Aparecen en las cartas de la tirada, en el diario de Ecos del juego y en tus builds guardados.
+- **Builds.** Escribe un plan para cada build: los Ecos que buscas y cuánto quieres cada uno. Abre un build desde **Builds guardados** o **Builds de jugadores** para ver todos sus Ecos, como en el diario de Ecos del juego.
+- **Estrellas.** Cada Eco recibe de 1 a 3 estrellas para tu clase. Aparecen en las cartas de la tirada, en el diario de Ecos del juego y en la ventana de detalle de un build de tu clase.
 - **Automatización.** En cada tirada, el addon puede elegir, desterrar, relanzar o congelar por ti, según tu build activo.
 - **Relanzamiento con Orbe y caza.** En una tirada de Orbe, el addon puede relanzar con un Orbe. También puede repetirlo hasta que salga un Eco que hayas marcado.
-- **Compartir.** Comparte tus builds con otros jugadores, importa los suyos y aprovecha lo que la comunidad conserva y destierra.
+- **Compartir.** Los builds de tus ranuras de build del juego se comparten automáticamente. Explora los builds de otros jugadores y añade uno de tu clase a tus wishlists. Aprovecha lo que la comunidad conserva y destierra.
 - **Seguimiento de partidas.** Consulta estadísticas por build, los Ecos que aún te faltan y un diario de cada decisión.
 
 ## 📦 Instalación
 
 1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — descarga la última versión.
 2. Descomprime la carpeta `EbonBuilds` en `Interface/AddOns/`.
-   Instala [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) de la misma forma si aún no está. [EbonAPI](https://github.com/Siphelis/EbonAPI) es común a los addons de Ebonhold. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) no arranca sin él.
+   Instala o actualiza [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) de la misma forma. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) necesita [EbonAPI](https://github.com/Siphelis/EbonAPI) 2.0.0 o posterior. [EbonAPI](https://github.com/Siphelis/EbonAPI) es común a los addons de Ebonhold. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) no arranca sin él.
 3. En la pantalla de selección de addons, comprueba que [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds) y [**EbonAPI**](https://github.com/Siphelis/EbonAPI) están marcados.
 
-El addon usa el idioma de tu juego: inglés, francés, alemán o español. Para cambiarlo, escribe `/eapi lang` seguido de `enUS`, `frFR`, `deDE` o `esES`.
+El addon usa el idioma de tu juego: inglés, francés, alemán o español. Para cambiarlo, pulsa Esc y haz clic en **EbonAPI**. En la página **General**, elígelo en la lista **Idioma**.
 
 ## 🚀 Inicio rápido
 
@@ -60,11 +60,45 @@ El addon usa el idioma de tu juego: inglés, francés, alemán o español. Para 
 
 La columna de la izquierda contiene:
 
-- **Builds guardados**: los builds que guarda el propio juego, con sus Ecos y sus estrellas.
-- **Builds públicos**: los builds que comparten otros jugadores.
-- **Importar build**: añade un build a partir de un texto.
+- **Builds guardados**: los builds y las wishlists que guarda el propio juego.
+- **Builds de jugadores**: los builds que comparten otros jugadores.
 - **+ Nuevo build**: crea un build.
 - Tus builds. Haz clic en uno para abrirlo. Pasa a ser tu build activo para este personaje. La automatización sigue al build activo.
+
+En **Builds guardados**, cada build es una tarjeta con su número de ranura, su nombre, su número de Ecos y sus Ecos bloqueados. Un **>** verde marca el build activo del juego.
+
+### La ventana de detalle
+
+Haz clic en una tarjeta de **Builds guardados** o de **Builds de jugadores**. Su ventana de detalle se abre junto a la ventana principal. Se cierra con la ventana principal, o cuando sales de la lista.
+
+- El encabezado muestra la clase, el número de Ecos y las familias del build. Cada familia indica su número de Ecos, por ejemplo **Tanque (3)**. Los Ecos sin familia están en **Sin familia**.
+- Bajo el encabezado, una fila de ranuras muestra los Ecos bloqueados. Si el jugador no los ha enviado, una línea lo indica. La fila tiene tantas ranuras como has desbloqueado en el juego.
+- Después, una cuadrícula muestra todos los Ecos del build, como en el diario de Ecos del juego. Los más raros van primero.
+
+En la cuadrícula:
+
+- Cada Eco tiene una sola casilla, sean cuales sean sus rarezas. Un pequeño disco indica las pilas de cada rareza, hasta tres rarezas.
+- Un candado marca un Eco bloqueado. Su nombre aparece en dorado.
+- Un libro marca un Eco que necesita un tomo.
+- Un halo gira detrás de cada icono, del color de su rareza. Es dorado en un Eco bloqueado.
+- En un build de tu clase, la descripción emergente muestra las estrellas del Eco, como en el diario de Ecos del juego.
+
+Para filtrar la cuadrícula:
+
+1. Marca una familia en el encabezado. La cuadrícula solo muestra sus Ecos.
+2. Marca más familias para añadir sus Ecos. Un Eco aparece si pertenece a una de ellas.
+3. Desmárcalas todas para volver a ver todos los Ecos.
+
+La fila de Ecos bloqueados nunca se filtra. Las familias que has marcado se mantienen cuando abres otro build. Se desmarcan cuando se cierra la ventana.
+
+Para añadir un build de jugador a tus wishlists:
+
+1. Abre un build de tu clase desde **Builds de jugadores**.
+2. Haz clic en **Añadir a mi wishlist**, en la parte inferior.
+3. Escribe un nombre, o conserva el que se propone.
+4. Confirma.
+
+El build se envía al servidor como una wishlist nueva, con sus Ecos y sus Ecos bloqueados. El chat confirma su creación. Después la encuentras entre tus wishlists en el diario de Ecos del juego, y en **Builds guardados**. En un build de otra clase, el botón queda gris: una wishlist es siempre para tu propia clase.
 
 ### Modo asistente
 
@@ -85,14 +119,14 @@ Haz clic en **Editar** en la página de un build. El editor tiene cuatro pestañ
 
 | Pestaña | Qué ajustas |
 | --- | --- |
-| **Resumen** | Clase, espec., título, descripción, Ecos bloqueados y el interruptor **Hacer público**. |
+| **Resumen** | Clase, espec., título, descripción y Ecos bloqueados. |
 | **Ecos** | Un peso para cada Eco. |
 | **Bonus** | Puntos extra por rareza, por familia y para los Ecos nuevos. |
 | **Automatización** | Destierros, protecciones y umbrales. Consulta [Automatización](#-automatización). |
 
 **Guardar** conserva tus cambios. **Cancelar** los descarta. **Exportar** (abajo a la izquierda) da el build en forma de texto.
 
-Los **Ecos bloqueados** son los Ecos permanentes que busca tu build. Hay 6 ranuras. Haz clic en una ranura para elegir un Eco. Haz clic derecho para vaciarla.
+Los **Ecos bloqueados** son los Ecos permanentes que busca tu build. Hay tantas ranuras como has desbloqueado en el juego, 6 como máximo. Haz clic en una ranura para elegir un Eco. Haz clic derecho para vaciarla.
 
 La **descripción** puede contener enlaces de Ecos. Haz clic en **+ Enlace de Eco**.
 
@@ -125,12 +159,12 @@ La **descripción** puede contener enlaces de Ecos. Haz clic en **+ Enlace de Ec
 
 1. En el diario de Ecos del juego, pasa el cursor sobre un Eco. La línea **Interés para** tu clase muestra las estrellas. Cuando la comunidad conoce el Eco, una segunda línea **Combina bien con** cita hasta tres Ecos que suelen conservarse con él.
 2. En una tirada, bajo el icono de cada carta.
-3. En **Builds guardados**, bajo cada Eco.
+3. Haz clic en una tarjeta de **Builds guardados** o de **Builds de jugadores**. En la ventana de detalle que se abre, pasa el cursor sobre un Eco. La descripción emergente muestra las mismas líneas que en el diario. Solo funciona con un build de tu clase.
 
 ### Cómo se calcula la nota
 
 1. Cada Eco parte de su rareza. Cuanto más raro, más alto parte.
-2. Después, el addon lee los builds de tu clase: los tuyos, los que has importado y los recibidos de otros jugadores. Cuantos más builds conservan un Eco, más sube.
+2. Después, el addon lee los builds de tu clase: tus **Builds guardados** y los **Builds de jugadores**. Cuantos más builds conservan un Eco, más sube.
 3. En las cartas de la tirada y en la descripción emergente, pesan más los builds que se parecen a tu partida actual. Un Eco que encaja con lo que ya tienes sube.
 4. Las listas de destierro bajan un Eco. Cuando se conocen las listas de tres jugadores, un Eco desterrado por la mitad de ellos o más recibe estrellas grises. Un Eco desterrado por una quinta parte de ellos o más pierde una estrella.
 5. Cada jugador cuenta una vez, tenga los builds que tenga.
@@ -178,9 +212,9 @@ La nota va de -5 (todos rechazan el Eco) a +3 (todos lo conservan). Un Eco ordin
 Dos cosas más que conviene saber:
 
 1. Cada rareza suma un pequeño bonus a la nota. Los Ecos más raros pasan delante cuando las notas están cerca.
-2. Si la comunidad no conoce ninguno de los Ecos ofrecidos, el addon usa tus pesos en esa tirada.
+2. La **Matriz común** necesita tres builds de tu clase entre tus **Builds guardados** y los **Builds de jugadores**, o las listas de destierro de tres jugadores. Hasta entonces, el addon funciona como con **Pesos manuales**.
 
-Con **Pesos manuales**, los umbrales son porcentajes del **Pico**: la mejor nota posible para tu clase con tus bonus.
+Con **Pesos manuales**, los umbrales son porcentajes del **Pico**: la mejor nota posible para tu clase con tus bonus. En este modo, el relanzamiento compara la nota total de los Ecos ofrecidos, no la mejor.
 
 Las estrellas son una vista sencilla de la nota de la comunidad. La automatización usa la nota más fina, de -5 a +3.
 
@@ -221,7 +255,7 @@ Una tirada cuesta 1 Orbe por defecto. El coste sigue el deslizador de calidad de
 ### La caza
 
 1. Abre el diario de Ecos del juego.
-2. Haz **Ctrl+clic** en los Ecos que quieres. Un borde dorado los marca. Otro Ctrl+clic quita uno. Funciona en las dos listas: el catálogo y los Ecos de tu partida.
+2. Haz **Ctrl+clic** en los Ecos que quieres. Un borde dorado los marca. Otro Ctrl+clic quita uno. Funciona en las dos listas: el catálogo y los Ecos de tu partida. La descripción emergente de un Eco te lo recuerda: **Ctrl+clic: cazar este Eco**, o **Ctrl+clic: dejar de cazar** cuando ya está marcado.
 3. En las opciones de Ebonhold, desactiva **auto-accept loadout echoes**. La caza no empieza mientras esa opción esté activada.
 4. Si la automatización está activada, enciende **Caza** arriba a la derecha del diario. Mientras esté encendido, la automatización te deja las tiradas. Se queda encendido hasta que lo apagues.
 5. En una tirada de Orbe, ajusta el deslizador al número de Orbes que aceptas gastar. La etiqueta indica cuántas tiradas paga.
@@ -247,35 +281,35 @@ La lista de Ecos marcados no se guarda. Está vacía tras una recarga o una nuev
 
 ## 🌐 Compartir
 
-### Builds públicos
+### Builds de jugadores
 
-1. Abre el build en el editor. En la pestaña **Resumen**, haz clic en **Hacer público** y luego en **Guardar**.
-2. Juega un personaje del nivel 1 al 80 con este build activo. El build queda **Validado**.
-3. Un build público y validado se envía a otros jugadores automáticamente.
+Los builds de tus ranuras de build del juego se comparten automáticamente con otros jugadores. No hay nada que activar. Ningún ajuste desactiva el uso compartido.
 
-Modificar un build le quita la validación. Vuelve a jugar para validarlo.
-
-Todo lo que contiene un build público se comparte: pesos, bonus, ajustes de automatización, lista de destierro y descripción.
+- De cada uno de estos builds, solo se comparten los Ecos: su rareza, sus pilas y cuáles están bloqueados. El nombre del build no se envía.
+- De tus builds de la columna de la izquierda, solo se comparten las listas de destierro de tu clase. Cuentan en la nota de la comunidad.
+- Tus pesos, bonus, otros ajustes de automatización y descripciones no se comparten.
 
 Para explorar los builds de otros:
 
-1. Haz clic en **Builds públicos**. La lista se abre con tu clase. Filtra por clase y espec.
-2. Haz clic en **Importar** para copiar un build a tu lista. La copia es privada y se abre enseguida.
-3. **Actualizar** aparece cuando el autor ha publicado una versión más reciente de un build que importaste.
+1. Haz clic en **Builds de jugadores**. La lista se abre con tu clase. Elige otra clase, o **Todas las clases**.
+2. Cada tarjeta muestra la clase, el número de Ecos y los Ecos bloqueados. No se muestra ningún nombre de jugador. Los builds con más Ecos van primero.
+3. Haz clic en una tarjeta para abrir su ventana de detalle. En un build de tu clase, **Añadir a mi wishlist** lo envía al servidor como una wishlist nueva.
 4. **Recargar** pide sus builds a otros jugadores. Hay una espera de 30 segundos.
 
-Si modificas un build que viene de otro jugador, pasa a ser tuyo. El autor pasa a ser tú y se quita la validación.
+La lista se llena sola a medida que otros jugadores comparten sus builds. Los conserva de una sesión a otra.
 
 ### Importar y exportar
 
 - **Exportar** (abajo a la izquierda del editor) muestra un texto. Cópialo y dáselo a un amigo.
-- **Importar build** (columna de la izquierda) acepta ese texto. También acepta una composición **EBH1** copiada de la ventana de Ecos del juego. Una composición EBH1 no crea un build. Solo se suma a la nota de la comunidad.
+- La importación vuelve en una próxima actualización.
+
+Si modificas un build que viene de otro jugador, pasa a ser tuyo. El autor pasa a ser tú.
 
 ## 📊 Sigue tus partidas
 
 Abre un build. Su página tiene cuatro pestañas.
 
-- **Resumen**: título, autor, espec., fecha, estado (público o privado, validado o no), Ecos bloqueados y descripción.
+- **Resumen**: título, autor, espec., fecha, Ecos bloqueados y descripción.
 - **Estadísticas**: Ecos vistos, partidas terminadas (nivel 80 alcanzado), partidas reiniciadas, elecciones, relanzamientos, destierros y congelaciones usados, y el reparto de tus elecciones por rareza.
 - **Faltan**: los Ecos de la clase del build que aún no tienes y que puedes conseguir a tu nivel. Cada línea indica dónde encontrar el Eco. Los Ecos bloqueados del build van primero.
 - **Diario**: una tarjeta por partida. Haz clic en una tarjeta para ver cada decisión: hora, acción, Ecos ofrecidos con su nota, y tus destierros, relanzamientos y congelaciones restantes. **Exportar** da la partida en forma de texto. **X** borra una partida. **Borrar todo** borra todas las partidas.
@@ -287,11 +321,15 @@ Una partida termina cuando tu personaje vuelve al nivel 1. Las 25 últimas parti
 ## 🔧 Ajustes y comandos
 
 - `/ebb` o `/ebonbuilds`: abre o cierra la ventana. `/ebb help` muestra el comando.
-- Botón del minimapa: haz clic para abrir la ventana. Arrástralo para moverlo.
-- Icono de engranaje arriba a la derecha de la ventana: los ajustes.
+- Botón del minimapa: haz clic para abrir la ventana. Arrástralo para moverlo. Sus opciones están en la página **Addons conectados** de la ventana de [EbonAPI](https://github.com/Siphelis/EbonAPI) (pulsa Esc y haz clic en **EbonAPI**):
+  - **Botón del minimapa**: **En el minimapa**, **En el botón de EbonAPI** u **Oculto**.
+  - **Bloquear su posición**: el botón ya no se mueve.
+  - **Restablecer su posición**: el botón vuelve a su lugar inicial.
+- Icono de engranaje junto al botón de cerrar de la ventana: los ajustes. Se abren en la página de [EbonBuilds](https://github.com/Siphelis/EbonBuilds) de la ventana de [EbonAPI](https://github.com/Siphelis/EbonAPI).
   - **Retraso de acción** (de 0,1 a 3 segundos, 2 por defecto): la espera antes de que la automatización actúe. Valores muy bajos pueden causar problemas al addon.
   - **Duración del aviso** (de 0,1 a 3 segundos, 3 por defecto): cuánto tiempo se queda visible el aviso.
-- `/eapi lang`: cambia el idioma del addon.
+- Las ventanas del addon siguen el aspecto elegido en la página **Apariencia** de la ventana de [EbonAPI](https://github.com/Siphelis/EbonAPI).
+- **Idioma**, en la página **General** de la ventana de [EbonAPI](https://github.com/Siphelis/EbonAPI): cambia el idioma del addon.
 
 ## 📜 Licencia y créditos
 

@@ -26,21 +26,21 @@
 
 ## ✨ Funktionen
 
-- **Builds.** Schreibe für jeden Build einen Plan: die Echos, die du anstrebst, und wie sehr du jedes einzelne willst.
-- **Sterne.** Jedes Echo bekommt für deine Klasse 1 bis 3 Sterne. Sie erscheinen auf den Karten eines Zugs, im Echo-Journal des Spiels und in deinen gespeicherten Builds.
+- **Builds.** Schreibe für jeden Build einen Plan: die Echos, die du anstrebst, und wie sehr du jedes einzelne willst. Öffne einen Build aus **Gespeicherte Builds** oder **Spieler-Builds**, um alle seine Echos zu sehen, wie im Echo-Journal des Spiels.
+- **Sterne.** Jedes Echo bekommt für deine Klasse 1 bis 3 Sterne. Sie erscheinen auf den Karten eines Zugs, im Echo-Journal des Spiels und im Detailfenster eines Builds deiner Klasse.
 - **Automatik.** Bei jedem Zug kann das Addon für dich wählen, verbannen, neu ziehen oder einfrieren, nach deinem aktiven Build.
 - **Neu ziehen mit Kugeln und Jagd.** Bei einem Kugel-Zug kann das Addon mit einer Kugel neu ziehen. Es kann das auch wiederholen, bis ein Echo fällt, das du vorgemerkt hast.
-- **Teilen.** Teile deine Builds mit anderen Spielern, importiere ihre und profitiere davon, was die Gemeinschaft behält und verbannt.
+- **Teilen.** Die Builds in den Build-Plätzen deines Spiels werden automatisch geteilt. Durchsuche die Builds anderer Spieler und füge einen Build deiner Klasse deinen Wishlists hinzu. Profitiere davon, was die Gemeinschaft behält und verbannt.
 - **Run-Verfolgung.** Sieh Statistiken pro Build, die Echos, die dir noch fehlen, und ein Logbuch jeder Entscheidung.
 
 ## 📦 Installation
 
 1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — lade die neueste Version herunter.
 2. Entpacke den Ordner `EbonBuilds` nach `Interface/AddOns/`.
-   Installiere [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) auf dieselbe Weise, falls es noch fehlt. [EbonAPI](https://github.com/Siphelis/EbonAPI) wird von den Ebonhold-Addons gemeinsam genutzt. Ohne [EbonAPI](https://github.com/Siphelis/EbonAPI) startet [EbonBuilds](https://github.com/Siphelis/EbonBuilds) nicht.
+   Installiere oder aktualisiere [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) auf dieselbe Weise. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) braucht [EbonAPI](https://github.com/Siphelis/EbonAPI) 2.0.0 oder neuer. [EbonAPI](https://github.com/Siphelis/EbonAPI) wird von den Ebonhold-Addons gemeinsam genutzt. Ohne [EbonAPI](https://github.com/Siphelis/EbonAPI) startet [EbonBuilds](https://github.com/Siphelis/EbonBuilds) nicht.
 3. Prüfe im Addon-Auswahlbildschirm, dass [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds) und [**EbonAPI**](https://github.com/Siphelis/EbonAPI) angehakt sind.
 
-Das Addon nutzt die Sprache deines Spiels: Englisch, Französisch, Deutsch oder Spanisch. Zum Ändern tippe `/eapi lang` gefolgt von `enUS`, `frFR`, `deDE` oder `esES`.
+Das Addon nutzt die Sprache deines Spiels: Englisch, Französisch, Deutsch oder Spanisch. Zum Ändern drücke Esc und klicke auf **EbonAPI**. Wähle sie auf der Seite **Allgemein** in der Liste **Sprache**.
 
 ## 🚀 Schnellstart
 
@@ -60,11 +60,45 @@ Du willst nur die Sterne und keine Automatik? Klicke auf der Build-Seite auf **A
 
 Die linke Spalte enthält:
 
-- **Gespeicherte Builds**: die Builds, die das Spiel selbst speichert, mit ihren Echos und Sternen.
-- **Öffentliche Builds**: die Builds, die andere Spieler teilen.
-- **Build importieren**: fügt einen Build aus einem Text hinzu.
+- **Gespeicherte Builds**: die Builds und Wishlists, die das Spiel selbst speichert.
+- **Spieler-Builds**: die Builds, die andere Spieler teilen.
 - **+ Neuer Build**: erstellt einen Build.
 - Deine Builds. Klicke auf einen, um ihn zu öffnen. Er wird dein aktiver Build für diesen Charakter. Die Automatik folgt dem aktiven Build.
+
+In **Gespeicherte Builds** ist jeder Build eine Karte mit seiner Platznummer, seinem Namen, der Anzahl seiner Echos und seinen gesperrten Echos. Ein grünes **>** markiert den aktiven Build des Spiels.
+
+### Das Detailfenster
+
+Klicke auf eine Karte in **Gespeicherte Builds** oder **Spieler-Builds**. Das Detailfenster des Builds öffnet sich neben dem Hauptfenster. Es schließt sich mit dem Hauptfenster oder wenn du die Liste verlässt.
+
+- Der Kopfbereich zeigt die Klasse, die Anzahl der Echos und die Familien des Builds. Jede Familie nennt ihre Anzahl Echos, zum Beispiel **Tank (3)**. Echos ohne Familie stehen unter **Keine Familie**.
+- Unter dem Kopfbereich zeigt eine Reihe von Plätzen die gesperrten Echos. Hat der Spieler sie nicht übermittelt, weist eine Zeile darauf hin. Die Reihe hat so viele Plätze, wie du im Spiel freigeschaltet hast.
+- Danach zeigt ein Raster jedes Echo des Builds, wie im Echo-Journal des Spiels. Die seltensten Echos stehen vorn.
+
+Im Raster:
+
+- Jedes Echo hat eine einzige Zelle, egal welche Seltenheiten es hat. Eine kleine Scheibe zeigt die Stapel jeder Seltenheit, für bis zu drei Seltenheiten.
+- Ein Schloss markiert ein gesperrtes Echo. Sein Name ist golden.
+- Ein Buch markiert ein Echo, das einen Folianten braucht.
+- Hinter jedem Symbol dreht sich ein Lichtkranz in der Farbe seiner Seltenheit. Bei einem gesperrten Echo ist er golden.
+- Bei einem Build deiner Klasse zeigt der Tooltip die Sterne des Echos, wie im Echo-Journal des Spiels.
+
+So filterst du das Raster:
+
+1. Hake im Kopfbereich eine Familie an. Das Raster zeigt nur ihre Echos.
+2. Hake weitere Familien an, um ihre Echos hinzuzufügen. Ein Echo erscheint, wenn es zu einer von ihnen gehört.
+3. Entferne alle Haken, um wieder jedes Echo zu sehen.
+
+Die Reihe der gesperrten Echos wird nie gefiltert. Die angehakten Familien bleiben, wenn du einen anderen Build öffnest. Sie werden zurückgesetzt, wenn sich das Fenster schließt.
+
+So fügst du einen Spieler-Build deinen Wishlists hinzu:
+
+1. Öffne in **Spieler-Builds** einen Build deiner Klasse.
+2. Klicke unten auf **Zu meiner Wishlist hinzufügen**.
+3. Tippe einen Namen ein oder behalte den vorgeschlagenen.
+4. Bestätige.
+
+Der Build geht als neue Wishlist an den Server, mit seinen Echos und seinen gesperrten Echos. Der Chat bestätigt, wenn sie erstellt ist. Danach findest du sie unter deinen Wishlists im Echo-Journal des Spiels und in **Gespeicherte Builds**. Bei einem Build einer anderen Klasse bleibt der Knopf ausgegraut: Eine Wishlist gilt immer für deine eigene Klasse.
 
 ### Assistent
 
@@ -85,14 +119,14 @@ Klicke auf der Build-Seite auf **Bearbeiten**. Der Editor hat vier Reiter.
 
 | Reiter | Was du einstellst |
 | --- | --- |
-| **Übersicht** | Klasse, Spez., Titel, Beschreibung, gesperrte Echos und den Schalter **Veröffentlichen**. |
+| **Übersicht** | Klasse, Spez., Titel, Beschreibung und gesperrte Echos. |
 | **Echos** | Ein Gewicht für jedes Echo. |
 | **Bonus** | Zusatzpunkte nach Seltenheit, nach Familie und für neue Echos. |
 | **Automatik** | Verbannungen, Schutz und Schwellen. Siehe [Automatik](#-automatik). |
 
 **Speichern** behält deine Änderungen. **Abbrechen** verwirft sie. **Exportieren** (unten links) gibt den Build als Text aus.
 
-**Gesperrte Echos** sind die permanenten Echos, die dein Build anstrebt. Es gibt 6 Plätze. Klicke auf einen Platz, um ein Echo zu wählen. Rechtsklick leert ihn.
+**Gesperrte Echos** sind die permanenten Echos, die dein Build anstrebt. Es gibt so viele Plätze, wie du im Spiel freigeschaltet hast, höchstens 6. Klicke auf einen Platz, um ein Echo zu wählen. Rechtsklick leert ihn.
 
 Die **Beschreibung** kann Echo-Links enthalten. Klicke auf **+ Echo-Link**.
 
@@ -125,12 +159,12 @@ Die **Beschreibung** kann Echo-Links enthalten. Klicke auf **+ Echo-Link**.
 
 1. Fahre im Echo-Journal des Spiels über ein Echo. Die Zeile **Nutzen für** deine Klasse zeigt die Sterne. Kennt die Gemeinschaft das Echo, nennt eine zweite Zeile **Passt gut zu** bis zu drei Echos, die oft zusammen behalten werden.
 2. Bei einem Zug unter dem Symbol jeder Karte.
-3. In **Gespeicherte Builds** unter jedem Echo.
+3. Klicke auf eine Karte in **Gespeicherte Builds** oder **Spieler-Builds**. Fahre im Detailfenster, das sich öffnet, über ein Echo. Der Tooltip zeigt dieselben Zeilen wie im Journal. Das funktioniert nur bei einem Build deiner Klasse.
 
 ### Wie die Note entsteht
 
 1. Jedes Echo startet bei seiner Seltenheit. Je seltener, desto höher der Start.
-2. Danach liest das Addon die Builds deiner Klasse: deine eigenen, die importierten und die von anderen Spielern erhaltenen. Je mehr Builds ein Echo behalten, desto höher steigt es.
+2. Danach liest das Addon die Builds deiner Klasse: die aus **Gespeicherte Builds** und die aus **Spieler-Builds**. Je mehr Builds ein Echo behalten, desto höher steigt es.
 3. Auf den Karten eines Zugs und im Tooltip zählen Builds stärker, die deinem aktuellen Run ähneln. Ein Echo, das zu dem passt, was du schon besitzt, steigt.
 4. Verbannungslisten ziehen ein Echo nach unten. Sobald die Listen von drei Spielern bekannt sind, bekommt ein Echo graue Sterne, wenn die Hälfte von ihnen oder mehr es verbannt. Verbannt es ein Fünftel von ihnen oder mehr, verliert es einen Stern.
 5. Jeder Spieler zählt einmal, egal wie viele Builds er hat.
@@ -178,9 +212,9 @@ Die Note reicht von -5 (alle lehnen das Echo ab) bis +3 (alle behalten es). Ein 
 Zwei weitere Dinge, die du wissen solltest:
 
 1. Jede Seltenheit addiert einen kleinen Bonus zur Note. Seltenere Echos liegen vorn, wenn die Noten nah beieinander liegen.
-2. Kennt die Gemeinschaft keines der angebotenen Echos, nutzt das Addon für diesen Zug deine Gewichte.
+2. Die **Gemeinschaftsmatrix** braucht drei Builds deiner Klasse in **Gespeicherte Builds** und **Spieler-Builds** zusammen oder die Verbannungslisten von drei Spielern. Bis dahin arbeitet das Addon wie mit **Eigene Gewichte**.
 
-Mit **Eigene Gewichte** sind die Schwellen Prozentwerte der **Spitze**: der bestmöglichen Note für deine Klasse mit deinen Boni.
+Mit **Eigene Gewichte** sind die Schwellen Prozentwerte der **Spitze**: der bestmöglichen Note für deine Klasse mit deinen Boni. In diesem Modus vergleicht das Neuziehen die Gesamtnote der angebotenen Echos, nicht die beste einzelne Note.
 
 Die Sterne sind eine einfache Ansicht der Gemeinschaftsnote. Die Automatik nutzt die feinere Note von -5 bis +3.
 
@@ -221,7 +255,7 @@ Ein Zug kostet standardmäßig 1 Kugel. Die Kosten folgen dem Qualitätsregler d
 ### Die Jagd
 
 1. Öffne das Echo-Journal des Spiels.
-2. **Strg+Klick** auf die Echos, die du willst. Ein goldener Rahmen markiert sie. Strg+Klick erneut entfernt eines. Es funktioniert in beiden Listen: dem Katalog und den Echos deines Runs.
+2. **Strg+Klick** auf die Echos, die du willst. Ein goldener Rahmen markiert sie. Strg+Klick erneut entfernt eines. Es funktioniert in beiden Listen: dem Katalog und den Echos deines Runs. Der Tooltip eines Echos erinnert dich daran: **Strg+Klick: dieses Echo jagen** oder, sobald es markiert ist, **Strg+Klick: nicht mehr jagen**.
 3. Schalte in den Optionen von Ebonhold **auto-accept loadout echoes** aus. Die Jagd startet nicht, solange diese Option an ist.
 4. Ist die Automatik an, schalte oben rechts im Journal **Jagd** ein. Solange er an ist, überlässt dir die Automatik die Züge. Er bleibt an, bis du ihn ausschaltest.
 5. Stelle bei einem Kugel-Zug den Regler auf die Anzahl Kugeln, die du auszugeben bereit bist. Die Beschriftung zeigt, wie viele Züge das bezahlt.
@@ -247,35 +281,35 @@ Die Liste der vorgemerkten Echos wird nicht gespeichert. Nach einem Neuladen ode
 
 ## 🌐 Teilen
 
-### Öffentliche Builds
+### Spieler-Builds
 
-1. Öffne den Build im Editor. Klicke im Reiter **Übersicht** auf **Veröffentlichen** und dann auf **Speichern**.
-2. Spiele einen Charakter mit diesem aktiven Build von Stufe 1 auf 80. Der Build wird **Bestätigt**.
-3. Ein öffentlicher und bestätigter Build wird automatisch an andere Spieler gesendet.
+Die Builds in den Build-Plätzen deines Spiels werden automatisch mit anderen Spielern geteilt. Du musst nichts einschalten. Keine Einstellung schaltet das Teilen ab.
 
-Eine Änderung am Build entfernt die Bestätigung. Spiele erneut, um ihn zu bestätigen.
-
-Alles in einem öffentlichen Build wird geteilt: Gewichte, Boni, Automatik-Einstellungen, Verbannungsliste und Beschreibung.
+- Von jedem dieser Builds werden nur die Echos geteilt: ihre Seltenheit, ihre Stapel und welche gesperrt sind. Der Name des Builds wird nicht gesendet.
+- Von deinen Builds in der linken Spalte werden nur die Verbannungslisten deiner Klasse geteilt. Sie fließen in die Gemeinschaftsnote ein.
+- Deine Gewichte, Boni, übrigen Automatik-Einstellungen und Beschreibungen werden nicht geteilt.
 
 So durchsuchst du die Builds anderer:
 
-1. Klicke auf **Öffentliche Builds**. Die Liste öffnet sich für deine Klasse. Filtere nach Klasse und Spez.
-2. Klicke auf **Importieren**, um einen Build in deine Liste zu kopieren. Die Kopie ist privat und öffnet sich sofort.
-3. **Aktualisieren** erscheint, wenn der Autor eine neuere Version eines von dir importierten Builds veröffentlicht hat.
+1. Klicke auf **Spieler-Builds**. Die Liste öffnet sich für deine Klasse. Wähle eine andere Klasse oder **Alle Klassen**.
+2. Jede Karte zeigt die Klasse, die Anzahl der Echos und die gesperrten Echos. Es wird kein Spielername angezeigt. Die Builds mit den meisten Echos stehen vorn.
+3. Klicke auf eine Karte, um das Detailfenster des Builds zu öffnen. Bei einem Build deiner Klasse sendet **Zu meiner Wishlist hinzufügen** ihn als neue Wishlist an den Server.
 4. **Neu laden** fragt andere Spieler nach ihren Builds. Es gibt 30 Sekunden Wartezeit.
 
-Änderst du einen Build, der von einem anderen Spieler stammt, wird er zu deinem. Der Autor wechselt zu dir und die Bestätigung wird entfernt.
+Die Liste füllt sich von selbst, wenn andere Spieler ihre Builds teilen. Die empfangenen Builds bleiben auch nach einem Neuladen oder einer neuen Anmeldung erhalten.
 
 ### Import und Export
 
 - **Exportieren** (unten links im Editor) zeigt einen Text. Kopiere ihn und gib ihn einem Freund.
-- **Build importieren** (linke Spalte) nimmt so einen Text an. Es nimmt auch eine **EBH1**-Zusammenstellung an, die aus dem Echo-Fenster des Spiels kopiert wurde. Eine EBH1-Zusammenstellung erstellt keinen Build. Sie fließt nur in die Gemeinschaftsnote ein.
+- Der Import kommt mit einem der nächsten Updates zurück.
+
+Änderst du einen Build, der von einem anderen Spieler stammt, wird er zu deinem. Der Autor wechselt zu dir.
 
 ## 📊 Deine Runs verfolgen
 
 Öffne einen Build. Seine Seite hat vier Reiter.
 
-- **Übersicht**: Titel, Autor, Spez., Datum, Status (öffentlich oder privat, bestätigt oder nicht), gesperrte Echos und Beschreibung.
+- **Übersicht**: Titel, Autor, Spez., Datum, gesperrte Echos und Beschreibung.
 - **Statistik**: gesehene Echos, abgeschlossene Läufe (Stufe 80 erreicht), neu begonnene Läufe, Wahlen, Neuziehungen, Verbannungen und Einfrierungen sowie der Anteil deiner Wahlen nach Seltenheit.
 - **Fehlend**: die Echos der Build-Klasse, die du noch nicht besitzt und auf deiner Stufe bekommen kannst. Jede Zeile zeigt, wo man das Echo findet. Die gesperrten Echos des Builds stehen vorn.
 - **Logbuch**: eine Karte pro Run. Klicke auf eine Karte, um jede Entscheidung zu sehen: Uhrzeit, Aktion, angebotene Echos mit ihren Noten und deine übrigen Verbannungen, Neuziehen und Einfrieren. **Exportieren** gibt den Run als Text aus. **X** löscht einen Run. **Alles löschen** löscht alle Runs.
@@ -287,11 +321,15 @@ Ein Run endet, wenn dein Charakter wieder auf Stufe 1 ist. Die 25 letzten Runs b
 ## 🔧 Einstellungen und Befehle
 
 - `/ebb` oder `/ebonbuilds`: öffnet oder schließt das Fenster. `/ebb help` gibt den Befehl aus.
-- Minikarten-Knopf: Klicke, um das Fenster zu öffnen. Ziehe ihn, um ihn zu verschieben.
-- Zahnrad-Symbol oben rechts im Fenster: die Einstellungen.
+- Minikarten-Knopf: Klicke, um das Fenster zu öffnen. Ziehe ihn, um ihn zu verschieben. Seine Optionen stehen auf der Seite **Verbundene Addons** des [EbonAPI](https://github.com/Siphelis/EbonAPI)-Fensters (drücke Esc und klicke auf **EbonAPI**):
+  - **Minimap-Schaltfläche**: **Auf der Minimap**, **In der EbonAPI-Schaltfläche** oder **Ausgeblendet**.
+  - **Position sperren**: Der Knopf lässt sich nicht mehr verschieben.
+  - **Position zurücksetzen**: Der Knopf kehrt an seinen Ausgangsplatz zurück.
+- Zahnrad-Symbol neben dem Schließen-Knopf des Fensters: die Einstellungen. Sie öffnen sich auf der Seite [EbonBuilds](https://github.com/Siphelis/EbonBuilds) des [EbonAPI](https://github.com/Siphelis/EbonAPI)-Fensters.
   - **Aktionsverzögerung** (0,1 bis 3 Sekunden, standardmäßig 2): die Wartezeit, bevor die Automatik handelt. Sehr niedrige Werte können das Addon stören.
   - **Anzeigedauer des Banners** (0,1 bis 3 Sekunden, standardmäßig 3): wie lange das Banner sichtbar bleibt.
-- `/eapi lang`: ändert die Sprache des Addons.
+- Die Fenster des Addons übernehmen das Aussehen, das du auf der Seite **Erscheinungsbild** des [EbonAPI](https://github.com/Siphelis/EbonAPI)-Fensters wählst.
+- **Sprache**, auf der Seite **Allgemein** des [EbonAPI](https://github.com/Siphelis/EbonAPI)-Fensters: ändert die Sprache des Addons.
 
 ## 📜 Lizenz & Credits
 
