@@ -1,185 +1,138 @@
 EbonBuilds.Sync = {}
 
 local api = EbonBuilds.api
+local Codec = EbonAPI.Profile
+local Hash = EbonAPI.Hash
+local State = EbonAPI.State
 
-local SYNC_VERSION = 2
-local VALIDATION_REQUIRED = true
-local MAX_REMOTE_BUILDS = 300
-local MAX_TITLE_LEN = 80
-local MAX_AUTHOR_LEN = 32
-local MAX_COMMENTS_LEN = 4000
+local FORMAT = "2"
+local PREFIX = "p_"
+local NONE = "-"
+local USAGE_LENGTH = 9
+local SLOT_MAX = 20
+local SAVED_SLOTS = EbonBuilds.Const.SAVED_SLOTS
+local CLASS_MAX = 10
 local REQ_COOLDOWN = 30
+local HEX = "0123456789abcdef"
 
 local lastRequestTime = 0
+local ownKey = nil
+local seen = nil
 
 local function Now()
     return GetTime()
 end
 
-local function SanitizeMarkup(text)
-    text = text:gsub("|T.-|t", "")
-    text = text:gsub("|H(.-)|h(.-)|h", function(link, label)
-        if link:find("^echo:") then
-            return "|H" .. link .. "|h" .. label .. "|h"
-        end
-        return label
-    end)
-    return text
-end
-
-local function SanitizeText(value, maxLen, allowMarkup)
-    if type(value) ~= "string" then return nil end
-    if #value > maxLen then value = value:sub(1, maxLen) end
-    if allowMarkup then return SanitizeMarkup(value) end
-    return (value:gsub("|", "||"))
-end
-
-local function CountRemoteBuilds()
-    local count = 0
-    for _ in pairs(EbonBuildsDB.remoteBuilds or {}) do count = count + 1 end
-    return count
-end
-
-local function SortableNow()
-    return date("%Y-%m-%d %H:%M:%S")
-end
-
-local function IsoToEpoch(iso)
-    if not iso or iso == "" then return 0 end
-    local y, m, d, h, min, s = iso:match("^(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d+)$")
-    if not y then return 0 end
-    local ok, result = pcall(time, {
-        year = tonumber(y), month = tonumber(m), day = tonumber(d),
-        hour = tonumber(h), min = tonumber(min), sec = tonumber(s),
-    })
-    return ok and result or 0
-end
-
-local function DateToEpoch(d)
-    if not d or d == "" then return 0 end
-    local epoch = IsoToEpoch(d)
-    if epoch > 0 then return epoch end
-    local m, day, y, h, min, s = d:match("^(%d+)/(%d+)/(%d+) (%d+):(%d+):(%d+)$")
-    if not m then return 0 end
-    local year = tonumber(y)
-    if year < 100 then year = year + 2000 end
-    local ok, result = pcall(time, {
-        year = year, month = tonumber(m), day = tonumber(day),
-        hour = tonumber(h), min = tonumber(min), sec = tonumber(s),
-    })
-    return ok and result or 0
-end
-
-function EbonBuilds.Sync.Epoch(build)
-    return DateToEpoch(build and build.lastModified)
-end
-
-local function Published()
-    if type(EbonBuildsDB.published) ~= "table" then
-        EbonBuildsDB.published = {}
+local function Hex(value)
+    local out = {}
+    for i = 8, 1, -1 do
+        local digit = value % 16
+        out[i] = HEX:sub(digit + 1, digit + 1)
+        value = (value - digit) / 16
     end
-    return EbonBuildsDB.published
+    return table.concat(out)
 end
 
-local function Eligible(build)
-    return build.isPublic == true and (not VALIDATION_REQUIRED or build.validated == true)
+function EbonBuilds.Sync.KeyFor(name)
+    local hi, lo = Hash.fnv64(name)
+    return PREFIX .. Hex(hi) .. Hex(lo)
 end
 
-function EbonBuilds.Sync.Refresh()
-    if not api then return false end
+local function OwnKey()
+    if not ownKey then
+        local name = UnitName("player")
+        if name and name ~= "" and name ~= UNKNOWNOBJECT then ownKey = EbonBuilds.Sync.KeyFor(name) end
+    end
+    return ownKey
+end
 
-    local published = Published()
-    local changed = false
+local function LockedText(build)
+    local ids = {}
+    for _, echo in ipairs(State.BuildEchoes(build) or {}) do
+        if echo.locked then ids[#ids + 1] = echo.spellId end
+    end
+    return (Codec.EncodeLocked(ids))
+end
+EbonBuilds.Sync.LockedText = LockedText
 
-    for id, build in pairs(EbonBuildsDB.builds) do
-        if Eligible(build) then
-            local epoch = DateToEpoch(build.lastModified)
-            if published[id] ~= epoch then
-                local b64 = EbonBuilds.ExportImport.ExportBuild(build)
-                if b64 and api:Share(id, epoch, b64) then
-                    changed = true
-                end
-                published[id] = epoch
-            end
+local function OwnText()
+    local name = UnitName("player")
+    local class = Codec.PlayerClass()
+    local builds = State.GetBuilds()
+    if not name or not class or not builds or type(builds.slots) ~= "table" then return nil end
+    local limit = math.min(tonumber(builds.maxSlots) or SAVED_SLOTS, SAVED_SLOTS)
+    local parts = {}
+    for _, build in ipairs(State.sortedBuilds()) do
+        local slot = tonumber(build.slot)
+        local echoes = Codec.EncodeEchoes(build.echoes)
+        if slot and slot >= 1 and slot <= limit and echoes ~= "" then
+            parts[#parts + 1] = slot .. "," .. NONE .. ",," .. LockedText(build) .. "," .. echoes
         end
     end
-
-    for id in pairs(published) do
-        local build = EbonBuildsDB.builds[id]
-        if not build or not Eligible(build) then
-            api:Unshare(id)
-            published[id] = nil
-            changed = true
-        end
-    end
-
-    return changed
+    return FORMAT .. "|" .. name .. "|" .. class .. "|" .. table.concat(parts, ";")
 end
 
-local function AssembleBuild(buildId, base64)
-    local imported = EbonBuilds.ExportImport.DecodeBuild(base64)
-    if not imported then return end
-
-    imported.title    = SanitizeText(imported.title,    MAX_TITLE_LEN)          or "Untitled"
-    imported.author   = SanitizeText(imported.author,   MAX_AUTHOR_LEN)         or "Unknown"
-    imported.comments = SanitizeText(imported.comments, MAX_COMMENTS_LEN, true) or ""
-
-    EbonBuildsDB.remoteBuilds = EbonBuildsDB.remoteBuilds or {}
-
-    local incomingEpoch = DateToEpoch(imported.lastModified)
-
-    local existing = EbonBuildsDB.builds[buildId]
-    if existing then
-        if incomingEpoch > DateToEpoch(existing.lastModified) then
-            EbonBuilds.Build.UpdateFromPublic(existing, imported)
-        end
-        return
-    end
-
-    EbonBuilds.Build.CompactRemote(imported)
-    local rb = EbonBuildsDB.remoteBuilds[buildId]
-    if rb then
-        if incomingEpoch > DateToEpoch(rb.lastModified) then
-            imported.id = buildId
-            EbonBuildsDB.remoteBuilds[buildId] = imported
-        end
-    else
-        if CountRemoteBuilds() >= MAX_REMOTE_BUILDS then
-            return
-        end
-        imported.id = buildId
-        EbonBuildsDB.remoteBuilds[buildId] = imported
-    end
-
-    if EbonBuilds.Matrix and EbonBuilds.Matrix.InvalidateBanVotes then
-        EbonBuilds.Matrix.InvalidateBanVotes()
-    end
-
-    if EbonBuilds.PublicBuildsView and EbonBuilds.PublicBuildsView.RefreshIfMounted then
-        EbonBuilds.PublicBuildsView.RefreshIfMounted()
-    end
+local function Publish()
+    local key = OwnKey()
+    if not key then return false end
+    local text = OwnText()
+    if not text then return false end
+    local held, state = api:GetShared(key)
+    if held == text then return false end
+    local stamp = time()
+    state = tonumber(state)
+    if state and stamp <= state then stamp = state + 1 end
+    return api:Share(key, stamp, text)
 end
 
-local function Adopt(name)
-    local b64 = api:GetShared(name)
-    if not b64 then return false end
-    local ok, err = pcall(AssembleBuild, name, b64)
-    if not ok then
-        EbonBuilds.Log.Info("Error assembling build " .. tostring(name) .. ": " .. tostring(err), "Sync")
-        return false
+local function Parse(text)
+    local format, name, class, body = text:match("^(%d+)|([^|]+)|(%d+)|(.*)$")
+    class = tonumber(class)
+    if format ~= FORMAT or not class or class < 1 or class > CLASS_MAX then return nil end
+    local builds = {}
+    for chunk in body:gmatch("[^;]+") do
+        local slot, category, usage, locked, echoes = chunk:match("^(%d+),([%a%-]),(%d*),([%w%-_]*),([%w%-_]*)$")
+        slot = tonumber(slot)
+        if not slot or slot < 1 or slot > SLOT_MAX then return nil end
+        if #usage ~= 0 and #usage ~= USAGE_LENGTH then return nil end
+        if #locked % 2 ~= 0 or not Codec.DecodeLocked(locked) then return nil end
+        if not Codec.DecodeBuild(echoes) then return nil end
+        if slot <= SAVED_SLOTS then
+            builds[slot] = {
+                echoes   = echoes,
+                category = category ~= NONE and category or nil,
+                usage    = usage ~= "" and usage or nil,
+                locked   = locked,
+            }
+        end
     end
-    return true
+    return name, class, builds
 end
 
-local function OnReceived(_, addon, name)
+local function Adopt(key)
+    if key == OwnKey() or key:sub(1, #PREFIX) ~= PREFIX then return false end
+    local text, state = api:GetShared(key)
+    if not text or seen[key] == state then return false end
+    seen[key] = state
+    local name, class, builds = Parse(text)
+    if not name or EbonBuilds.Sync.KeyFor(name) ~= key then return false end
+    return EbonBuilds.Profiles.Merge(name, class, builds)
+end
+
+local function OnReceived(_, addon, key)
     if addon ~= "EbonBuilds" then return end
-    if Adopt(name) then
-        EbonBuildsDB.lastSyncDate = SortableNow()
-    end
+    Adopt(key)
 end
 
-local function OnBuildsChanged()
-    EbonBuilds.Sync.Refresh()
+local function Retire()
+    if type(EbonBuildsDB.published) == "table" then
+        for id in pairs(EbonBuildsDB.published) do api:Unshare(id) end
+    end
+    EbonBuildsDB.published = nil
+    EbonBuildsDB.remoteBuilds = nil
+    EbonBuildsDB.syncVersion = nil
+    EbonBuildsDB.syncPeers = nil
+    EbonBuildsDB.lastSyncDate = nil
 end
 
 function EbonBuilds.Sync.GetCooldownRemaining()
@@ -195,7 +148,7 @@ function EbonBuilds.Sync.RequestSync()
         return false
     end
 
-    EbonBuilds.Sync.Refresh()
+    Publish()
 
     if not api:SyncShares() then
         EbonBuilds.Log.Info(EbonBuilds.L.SYNC_NO_CHANNEL, "Sync")
@@ -208,26 +161,14 @@ function EbonBuilds.Sync.RequestSync()
 end
 
 function EbonBuilds.Sync.Init()
+    Retire()
+
+    seen = api:DB({ account = { seen = {} } }).account.seen
+
     api:On("SHARE_RECEIVED", OnReceived)
-    EbonBuilds.Events.On("EB_BUILDS_CHANGED", OnBuildsChanged, "Sync")
+    api:On("SERVER_BUILDS", Publish)
 
-    EbonBuildsDB.lastSyncDate = EbonBuildsDB.lastSyncDate or nil
-    EbonBuildsDB.syncPeers = nil
+    for _, key in ipairs(api:SharedNames()) do Adopt(key) end
 
-    local storedVersion = EbonBuildsDB.syncVersion or 0
-    if storedVersion < SYNC_VERSION then
-        if EbonBuildsDB.remoteBuilds and next(EbonBuildsDB.remoteBuilds) then
-            EbonBuildsDB.remoteBuilds = {}
-        end
-        EbonBuildsDB.syncVersion = SYNC_VERSION
-    end
-
-    local remote = EbonBuildsDB.remoteBuilds or {}
-    for _, name in ipairs(api:SharedNames()) do
-        if not EbonBuildsDB.builds[name] and not remote[name] then
-            Adopt(name)
-        end
-    end
-
-    EbonBuilds.Sync.Refresh()
+    Publish()
 end

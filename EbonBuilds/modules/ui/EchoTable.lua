@@ -1,10 +1,10 @@
 EbonBuilds.EchoTable = {}
 
-local PADDING      = 10
-local TITLE_HEIGHT = 30
-local HEADER_HEIGHT= 24
 local ROW_HEIGHT   = 36
 local COL_ICON     = 40
+local NAME_WIDTH   = 120
+local WEIGHT_WIDTH = 60
+local WEIGHT_INSET = 28
 
 local CLASS_BITS = EbonBuilds.Const.CLASS_BITS
 
@@ -35,121 +35,76 @@ end
 local echoList     = {}
 local filteredList = {}
 local rowPool      = {}
-local scrollFrame, scrollChild, scrollBar
+local W = EbonBuilds.Widgets
+local scroll, scrollChild
 
-local function CreateHeaders(parent, top, left)
-    local nameHdr = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    nameHdr:SetPoint("TOPLEFT", parent, "TOPLEFT", left + COL_ICON + 4, top)
-    nameHdr:SetText(EbonBuilds.L.COL_NAME)
-
-    local weightHdr = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    weightHdr:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -(PADDING + 28), top)
-    weightHdr:SetText(EbonBuilds.L.COL_WEIGHT)
+local function CreateHeaders(parent, width)
+    local heads = parent:Add("bar", { spacing = 0 })
+    W.Gap(heads, COL_ICON + 4, 1)
+    heads:Add("text", { key = "COL_NAME", width = NAME_WIDTH })
+    W.Gap(heads, width - COL_ICON - 4 - NAME_WIDTH - WEIGHT_WIDTH - WEIGHT_INSET, 1)
+    heads:Add("text", { key = "COL_WEIGHT", width = WEIGHT_WIDTH }).text:SetJustifyH("RIGHT")
 end
 
 local function GetVisibleCount()
-    return math.ceil(scrollFrame:GetHeight() / ROW_HEIGHT) + 1
+    return math.ceil(W.ScrollView(scroll) / ROW_HEIGHT) + 1
 end
 
 local function UpdateScrollRange()
-    local visibleCount = GetVisibleCount()
-    local maxOffset    = math.max(0, (#filteredList - visibleCount + 1) * ROW_HEIGHT)
-    scrollBar:SetMinMaxValues(0, maxOffset)
-    if scrollBar:GetValue() > maxOffset then scrollBar:SetValue(maxOffset) end
+    W.ScrollHeight(scroll, #filteredList * ROW_HEIGHT)
 end
 
-local function RefreshRows()
-    local scrollOffset = math.floor(scrollBar:GetValue() / ROW_HEIGHT + 0.5)
+local function DrawRows()
+    local first = math.floor(W.ScrollOffset(scroll) / ROW_HEIGHT)
     local visibleCount = GetVisibleCount()
     for poolIdx = 1, visibleCount do
         if not rowPool[poolIdx] then
             rowPool[poolIdx] = EbonBuilds.EchoTableRows.CreateRow(scrollChild, poolIdx)
         end
-        local listIdx = scrollOffset + poolIdx
+        local listIdx = first + poolIdx
         local entry   = filteredList[listIdx]
         if entry then
-            local yOffset = -(poolIdx - 1) * ROW_HEIGHT
-            EbonBuilds.EchoTableRows.Populate(rowPool[poolIdx], yOffset, entry)
+            EbonBuilds.EchoTableRows.Populate(rowPool[poolIdx], -(listIdx - 1) * ROW_HEIGHT, entry)
         else
             rowPool[poolIdx]:Hide()
         end
     end
+    for i = visibleCount + 1, #rowPool do rowPool[i]:Hide() end
 end
 
-local function SyncChildWidth(sf, child)
-    local w = sf:GetWidth()
-    if w and w > 0 then child:SetWidth(w) end
+local drawing = false
+
+local function RefreshRows()
+    if drawing then return end
+    drawing = true
+    DrawRows()
+    drawing = false
 end
 
-local function WireScrollBar(sf, bar)
-    bar:SetScript("OnValueChanged", function(self, value)
-        RefreshRows()
-    end)
-
-    sf:EnableMouseWheel(true)
-    sf:SetScript("OnMouseWheel", function(self, delta)
-        local current  = bar:GetValue()
-        local min, max = bar:GetMinMaxValues()
-        bar:SetValue(math.max(min, math.min(max, current - delta * ROW_HEIGHT)))
-    end)
-
-    sf:SetScript("OnSizeChanged", function()
-        SyncChildWidth(sf, scrollChild)
-        UpdateScrollRange()
-        RefreshRows()
-    end)
+local function CreateScroll(parent, width)
+    scroll = W.Scroll(parent, { onScroll = RefreshRows })
+    scrollChild = scroll._content
+    W.ScrollSize(scroll, width, W.Rest(parent, scroll))
 end
-
-local function CreateScrollBar(parent, sf)
-    local bar = CreateFrame("Slider", nil, sf, "UIPanelScrollBarTemplate")
-    bar:SetPoint("TOPRIGHT",    sf, "TOPRIGHT",    18, -16)
-    bar:SetPoint("BOTTOMRIGHT", sf, "BOTTOMRIGHT", 18,  16)
-    bar:SetMinMaxValues(0, 0)
-    bar:SetValueStep(ROW_HEIGHT)
-    bar:SetValue(0)
-    return bar
-end
-
-local function CreateScrollFrame(parent, x, y)
-    local sf = CreateFrame("ScrollFrame", nil, parent)
-    sf:SetPoint("TOPLEFT",     parent, "TOPLEFT",     x,       y)
-    sf:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -x - 20, PADDING)
-
-    local child = CreateFrame("Frame", nil, sf)
-    child:SetSize(1, 1)
-    sf:SetScrollChild(child)
-    return sf, child
-end
-
-local FILTER_BAR_OFFSET = 34
 
 function EbonBuilds.EchoTable.Init(parent)
     echoList     = EbonBuilds.Catalog.SortedList()
     filteredList = ApplyClassFilter(echoList)
 
-    local left  = PADDING
-    local top   = -(TITLE_HEIGHT + PADDING) - FILTER_BAR_OFFSET
-
-    CreateHeaders(parent, top, left)
-
-    local sfTop = top - HEADER_HEIGHT
-    scrollFrame, scrollChild = CreateScrollFrame(parent, left, sfTop)
-
-    scrollBar = CreateScrollBar(parent, scrollFrame)
-
-    WireScrollBar(scrollFrame, scrollBar)
-
-    scrollFrame:SetScript("OnShow", function()
-        SyncChildWidth(scrollFrame, scrollChild)
+    local width = parent.spec.width - (parent.spec.padding or 0) * 2
+    CreateHeaders(parent, width)
+    CreateScroll(parent, width)
+    local function Redraw()
         UpdateScrollRange()
         RefreshRows()
-    end)
+    end
+    scroll:HookScript("OnShow", Redraw)
 
     if EbonBuilds.Filters and EbonBuilds.Filters.OnChange then
         EbonBuilds.Filters.OnChange(function()
             filteredList = EbonBuilds.Filters.Apply(ApplyClassFilter(echoList))
             UpdateScrollRange()
-            scrollBar:SetValue(0)
+            W.ScrollTo(scroll, 0)
             RefreshRows()
         end)
     end
@@ -167,7 +122,5 @@ function EbonBuilds.EchoTable.Init(parent)
         EbonBuilds.BuildForm.OnClassChanged(Rebuild)
     end
 
-    SyncChildWidth(scrollFrame, scrollChild)
-    UpdateScrollRange()
-    RefreshRows()
+    Redraw()
 end

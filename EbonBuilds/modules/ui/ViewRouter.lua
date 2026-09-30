@@ -3,6 +3,11 @@ EbonBuilds.ViewRouter = {}
 local views       = {}
 local currentName = nil
 local container   = nil
+local onChange    = nil
+
+function EbonBuilds.ViewRouter.OnChange(fn)
+    onChange = fn
+end
 
 function EbonBuilds.ViewRouter.SetContainer(frame)
     container = frame
@@ -23,6 +28,7 @@ function EbonBuilds.ViewRouter.Show(name, context)
     end
     currentName = name
     view.Show(container, context)
+    if onChange then onChange(name) end
 end
 
 function EbonBuilds.ViewRouter.Current()

@@ -9,7 +9,7 @@ OnAddonLoaded = function(addonName)
     end
 
     if not EbonBuilds.api then
-        EbonBuilds.Log.Warn("EbonAPI 1.1 or newer is required -- EbonBuilds did not start.")
+        EbonBuilds.Log.Warn("EbonAPI 1.0 or newer is required -- EbonBuilds did not start.")
         return
     end
 
@@ -32,6 +32,7 @@ OnAddonLoaded = function(addonName)
 
     local steps = {
         { "Build.Migrate",        function() EbonBuilds.Build.Migrate()        end },
+        { "Options",              function() EbonBuilds.MainWindow.RegisterOptions() end },
         { "Session",              function() EbonBuilds.Session.Init()         end },
         { "SessionHistory",       function() EbonBuilds.SessionHistory.Init()  end },
         { "Protocol",             function() EbonBuilds.Protocol.Init()        end },

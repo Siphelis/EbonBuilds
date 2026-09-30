@@ -218,8 +218,6 @@ local function BuildExportData(build)
 		echoWeights = filteredWeights,
 		settings = build.settings,
 		automationEnabled = build.automationEnabled,
-		isPublic = build.isPublic or false,
-		validated = build.validated or false,
 		author = build.author,
 		lastModified = build.lastModified,
 		copiedFrom = build.copiedFrom or nil,
@@ -260,8 +258,6 @@ function EbonBuilds.ExportImport.DecodeBuild(b64String)
 		echoWeights = echoWeights,
 		settings    = data.settings or EbonBuilds.Build.DefaultSettings(),
 		automationEnabled = data.automationEnabled,
-		isPublic    = data.isPublic or false,
-		validated   = data.validated or false,
 		author      = data.author,
 		lastModified = data.lastModified,
 		copiedFrom  = data.copiedFrom or nil,
@@ -317,179 +313,91 @@ function EbonBuilds.ExportImport.ImportBuild(b64String)
 	return build
 end
 
-local exportDialog
-
-local function CreateExportDialog()
-	local f = CreateFrame("Frame", "EbonBuildsExportBuildDialog", UIParent)
-	f:SetSize(700, 420)
-	f:SetPoint("CENTER")
-	f:SetBackdrop({
-		bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background",
-		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-		tile = true, tileSize = 16, edgeSize = 32,
-		insets = { left = 11, right = 12, top = 12, bottom = 11 },
-	})
-	f:SetBackdropColor(0, 0, 0, 0.9)
-	f:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
-	f:SetFrameStrata("FULLSCREEN_DIALOG")
-	f:EnableMouse(true)
-	f:SetMovable(true)
-	f:SetScript("OnMouseDown", function(self, button)
-		if button == "LeftButton" then self:StartMoving() end
-	end)
-	f:SetScript("OnMouseUp", function(self) self:StopMovingOrSizing() end)
-
-	local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-	title:SetPoint("TOP", f, "TOP", 0, -12)
-	title:SetText(L.EXPORT_BUILD_TITLE)
-
-	local close = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-	close:SetSize(80, 22)
-	close:SetPoint("BOTTOM", f, "BOTTOM", 0, 12)
-	close:SetText(L.CLOSE)
-	close:SetScript("OnClick", function() f:Hide() end)
-
-	local scroll = CreateFrame("ScrollFrame", "EbonBuildsExportScroll", f, "UIPanelScrollFrameTemplate")
-	scroll:SetPoint("TOP",    title, "BOTTOM", 0, -8)
-	scroll:SetPoint("BOTTOM", close, "TOP",     0,  8)
-	scroll:SetPoint("LEFT",   f,     "LEFT",   14,  0)
-	scroll:SetPoint("RIGHT",  f,     "RIGHT", -14,  0)
-
-	local box = CreateFrame("EditBox", nil, scroll)
-	box:SetMultiLine(true)
-	box:SetMaxLetters(0)
-	box:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
-	box:SetWidth(640)
-	box:SetAutoFocus(false)
-	box:SetScript("OnEscapePressed", function() f:Hide() end)
-	scroll:SetScrollChild(box)
-
-	f._editBox = box
-	exportDialog = f
-end
-
 function EbonBuilds.ExportImport.ShowExportDialog(build)
-	if not exportDialog then CreateExportDialog() end
 	local b64 = EbonBuilds.ExportImport.ExportBuild(build)
 	if not b64 then return end
-	exportDialog._editBox:SetText(b64)
-	exportDialog._editBox:HighlightText()
-	exportDialog:Show()
+	EbonBuilds.api:CopyBox(b64, L.EXPORT_BUILD_TITLE)
 end
+
+local IMPORT_WIDTH   = 700
+local IMPORT_HEIGHT  = 420
+local IMPORT_PADDING = 14
+local IMPORT_LINES   = 20
+local BUTTON_WIDTH   = 80
+local ERROR_COLOR    = "|cffff4c4c"
 
 local importDialog
 
-local function CreateImportDialog()
-	local f = CreateFrame("Frame", "EbonBuildsImportBuildDialog", UIParent)
-	f:SetSize(700, 420)
-	f:SetPoint("CENTER")
-	f:SetBackdrop({
-		bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background",
-		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-		tile = true, tileSize = 16, edgeSize = 32,
-		insets = { left = 11, right = 12, top = 12, bottom = 11 },
-	})
-	f:SetBackdropColor(0, 0, 0, 0.9)
-	f:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
-	f:SetFrameStrata("FULLSCREEN_DIALOG")
-	f:EnableMouse(true)
-	f:SetMovable(true)
-	f:SetScript("OnMouseDown", function(self, button)
-		if button == "LeftButton" then self:StartMoving() end
-	end)
-	f:SetScript("OnMouseUp", function(self) self:StopMovingOrSizing() end)
+local function RunImport(f)
+	local text = f._field.edit:GetText() or ""
 
-	local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-	title:SetPoint("TOP", f, "TOP", 0, -12)
-	title:SetText(L.IMPORT_BUILD)
-
-	local import = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-	import:SetSize(80, 22)
-	import:SetPoint("BOTTOM", f, "BOTTOM", -50, 12)
-	import:SetText(L.IMPORT)
-	import:SetScript("OnClick", function()
-		local text = f._editBox:GetText() or ""
-
-		local learned, parsed = EbonBuilds.ExportImport.LearnFromEBH1(text)
-		if learned then
-			f:Hide()
-			local who = parsed.name and ("\"" .. parsed.name .. "\" ") or ""
-			if learned > 0 then
-				EbonBuilds.Log.Info(string.format(
-					L.EBH1_LEARNED,
-					who, parsed.class, learned))
-			else
-				EbonBuilds.Log.Info(string.format(L.EBH1_KNOWN, who))
-			end
-			return
-		end
-
-		local build = EbonBuilds.ExportImport.ImportBuild(text)
-		if build then
-			f:Hide()
-			if EbonBuilds.BuildList and EbonBuilds.BuildList.Refresh then
-				EbonBuilds.BuildList.Refresh()
-			end
-			EbonBuilds.ViewRouter.Show("buildOverview", { build = build })
+	local learned, parsed = EbonBuilds.ExportImport.LearnFromEBH1(text)
+	if learned then
+		f:Close()
+		local who = parsed.name and ("\"" .. parsed.name .. "\" ") or ""
+		if learned > 0 then
+			EbonBuilds.Log.Info(string.format(
+				L.EBH1_LEARNED,
+				who, parsed.class, learned))
 		else
-			f._error:Show()
+			EbonBuilds.Log.Info(string.format(L.EBH1_KNOWN, who))
 		end
-	end)
+		return
+	end
 
-	local cancel = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-	cancel:SetSize(80, 22)
-	cancel:SetPoint("BOTTOM", f, "BOTTOM", 50, 12)
-	cancel:SetText(L.CANCEL)
-	cancel:SetScript("OnClick", function() f:Hide() end)
+	local build = EbonBuilds.ExportImport.ImportBuild(text)
+	if build then
+		f:Close()
+		if EbonBuilds.BuildList and EbonBuilds.BuildList.Refresh then
+			EbonBuilds.BuildList.Refresh()
+		end
+		EbonBuilds.ViewRouter.Show("buildOverview", { build = build })
+	else
+		f._failed = true
+		f:Refresh()
+	end
+end
 
-	local scroll = CreateFrame("ScrollFrame", "EbonBuildsImportScroll", f, "UIPanelScrollFrameTemplate")
-	scroll:SetPoint("TOP",    title,  "BOTTOM", 0, -8)
-	scroll:SetPoint("BOTTOM", import, "TOP",     0,  8)
-	scroll:SetPoint("LEFT",   f,      "LEFT",   14,  0)
-	scroll:SetPoint("RIGHT",  f,      "RIGHT", -14,  0)
+local function CreateImportDialog()
+	local W = EbonBuilds.Widgets
+	local inner = IMPORT_WIDTH - IMPORT_PADDING * 2
+	local f = EbonBuilds.api:Window("import", {
+		key = "IMPORT_BUILD", width = IMPORT_WIDTH, height = IMPORT_HEIGHT, layout = "VERTICAL", spacing = 8,
+		padding = IMPORT_PADDING,
+	})
+	f:SetFrameStrata("FULLSCREEN_DIALOG")
 
-	local box = CreateFrame("EditBox", nil, scroll)
-	box:SetMultiLine(true)
-	box:SetMaxLetters(0)
-	box:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
-	box:SetWidth(640)
-	box:SetAutoFocus(false)
-	box:SetScript("OnEscapePressed", function() f:Hide() end)
-	scroll:SetScrollChild(box)
+	local field = W.Field(f, { width = inner, lines = IMPORT_LINES }, { placeholder = "IMPORT_HINT" })
+	field.edit:SetScript("OnEscapePressed", function() f:Close() end)
+	f._field = field
 
-	local hint = box:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-	hint:SetPoint("TOPLEFT",  box, "TOPLEFT",  2, -2)
-	hint:SetPoint("TOPRIGHT", box, "TOPRIGHT", -2, -2)
-	hint:SetJustifyH("LEFT")
-	hint:SetJustifyV("TOP")
-	hint:SetTextColor(0.5, 0.5, 0.5, 1)
-	hint:SetText(L.IMPORT_HINT)
-
-	box:SetScript("OnEditFocusGained", function() hint:Hide() end)
-	box:SetScript("OnEditFocusLost", function()
-		if (box:GetText() or "") == "" then hint:Show() end
-	end)
-	box:SetScript("OnTextChanged", function()
-		if box:HasFocus() then hint:Hide()
-		elseif (box:GetText() or "") == "" then hint:Show()
-		else hint:Hide() end
-	end)
-
-	local error = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	error:SetPoint("BOTTOM", import, "TOP", 0, 4)
-	error:SetTextColor(1, 0.3, 0.3, 1)
-	error:SetText(L.IMPORT_ERROR)
-	error:Hide()
+	local error = W.Kit("text", f, {
+		width = inner,
+		text = function() return ERROR_COLOR .. L.IMPORT_ERROR .. "|r" end,
+		hidden = function() return not f._failed end,
+	})
+	error.text:SetJustifyH("CENTER")
 	f._error = error
 
-	f._editBox = box
+	local buttons = W.Centered(f, inner, BUTTON_WIDTH * 2 + 20)
+	W.Kit("button", buttons, {
+		key = "IMPORT", width = BUTTON_WIDTH,
+		onClick = function() RunImport(f) end,
+	})
+	W.Gap(buttons, 20, 1)
+	W.Kit("button", buttons, {
+		key = "CANCEL", width = BUTTON_WIDTH,
+		onClick = function() f:Close() end,
+	})
+
 	importDialog = f
 end
 
 function EbonBuilds.ExportImport.ShowImportDialog()
 	if not importDialog then CreateImportDialog() end
-	importDialog._editBox:SetText("")
-	importDialog._error:Hide()
+	importDialog._field:SetValue("")
+	importDialog._failed = false
+	importDialog:Refresh()
 	importDialog:Show()
-	importDialog._editBox:SetFocus()
+	importDialog._field.edit:SetFocus()
 end

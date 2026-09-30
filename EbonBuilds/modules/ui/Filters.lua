@@ -3,9 +3,7 @@ EbonBuilds.Filters = {}
 local L = EbonBuilds.L
 
 local FAMILY_MAP = EbonBuilds.Const.FAMILY_MAP
-local FAMILIES = { "Tank", "Survivability", "Healer", "Caster", "Melee", "Ranged", "No family" }
-local QUALITY_LABELS = { L.ALL }
-for q = 0, 4 do QUALITY_LABELS[q + 2] = EbonBuilds.Const.QUALITY_NAME[q] end
+local FAMILIES = EbonBuilds.Const.FAMILIES
 
 local state = {
     text     = "",
@@ -75,26 +73,30 @@ function EbonBuilds.Filters.Apply(echoList)
     return out
 end
 
-local function CreateSearchBox(bar)
-    local container = CreateFrame("Frame", nil, bar)
-    container:SetSize(140, 22)
-    container:SetPoint("LEFT", bar, "LEFT", 0, 0)
-    EbonBuilds.Widgets.InputBackdrop(container)
+local SEARCH_WIDTH  = 140
+local QUALITY_WIDTH = 110
+local FAMILY_WIDTH  = 150
+local GAP           = 6
+local ALL_QUALITIES = -1
 
-    local edit = CreateFrame("EditBox", nil, container)
-    edit:SetSize(134, 18)
-    edit:SetPoint("CENTER", container, "CENTER", 0, 0)
-    edit:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
-    edit:SetTextColor(1, 1, 1, 1)
-    edit:SetAutoFocus(false)
-    edit:SetMaxLetters(60)
-    edit:SetScript("OnTextChanged", function(self)
-        state.text = self:GetText():lower()
-        Notify()
-    end)
-    edit:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    searchEditBox = edit
-    return container
+local function QualityItems()
+    local items = { { value = ALL_QUALITIES, text = L.ALL } }
+    for q = 0, 4 do
+        items[#items + 1] = { value = q, text = EbonBuilds.Const.QUALITY_NAME[q] }
+    end
+    return items
+end
+
+local function CreateSearchBox(bar)
+    local field = EbonBuilds.Widgets.Field(bar, { width = SEARCH_WIDTH }, {
+        maxLetters = 60,
+        onText = function(text)
+            state.text = text:lower()
+            Notify()
+        end,
+    })
+    searchEditBox = field.edit
+    return field
 end
 
 function EbonBuilds.Filters.FocusSearch()
@@ -105,31 +107,23 @@ function EbonBuilds.Filters.ShowAllClasses()
     return state.showAllClasses
 end
 
-local function CreateQualityDropdown(bar, leftAnchor)
-    local dropdown = CreateFrame("Frame", "EbonBuildsFiltersQualityDD", bar, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", leftAnchor, "RIGHT", 0, -2)
-
-    UIDropDownMenu_SetWidth(dropdown, 90)
-    UIDropDownMenu_SetText(dropdown, L.ALL)
-
-    UIDropDownMenu_Initialize(dropdown, function()
-        for index, name in ipairs(QUALITY_LABELS) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = name
-            info.func = function()
-                if index == 1 then state.quality = nil else state.quality = index - 2 end
-                UIDropDownMenu_SetText(dropdown, name)
-                Notify()
-            end
-            UIDropDownMenu_AddButton(info)
-        end
-    end)
-    return dropdown
+local function CreateQualityDropdown(bar)
+    local select = EbonBuilds.Widgets.Kit("select", bar, {
+        width = QUALITY_WIDTH,
+        values = QualityItems,
+        get = function() return state.quality or ALL_QUALITIES end,
+        onChange = function(_, value)
+            if value == ALL_QUALITIES then state.quality = nil else state.quality = value end
+            Notify()
+        end,
+    })
+    return select
 end
 
-local function CreateFamilyDropdown(bar, leftAnchor)
-    local dropdown = CreateFrame("Frame", "EbonBuildsFiltersFamilyDD", bar, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", leftAnchor, "RIGHT", -6, 0)
+local function CreateFamilyDropdown(bar, height)
+    local holder = bar:Add("bar", { layout = "NONE", width = FAMILY_WIDTH, height = height })
+    local dropdown = CreateFrame("Frame", "EbonBuildsFiltersFamilyDD", holder, "UIDropDownMenuTemplate")
+    dropdown:SetPoint("BOTTOMLEFT", holder, "BOTTOMLEFT", -16, -4)
     UIDropDownMenu_SetWidth(dropdown, 130)
 
     local function UpdateFamilyLabel()
@@ -167,39 +161,23 @@ local function CreateFamilyDropdown(bar, leftAnchor)
 end
 
 function EbonBuilds.Filters.Init(parent)
-    local bar = CreateFrame("Frame", nil, parent)
-    bar:SetPoint("TOPLEFT",  parent, "TOPLEFT",   10, -34)
-    bar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -10, -34)
-    bar:SetHeight(30)
+    local W = EbonBuilds.Widgets
+    local bar = parent:Add("bar", { spacing = GAP })
 
-    local searchContainer = CreateSearchBox(bar)
-    local qualityDropdown = CreateQualityDropdown(bar, searchContainer)
-    local familyDropdown  = CreateFamilyDropdown(bar, qualityDropdown)
+    CreateSearchBox(bar)
+    local qualityDropdown = CreateQualityDropdown(bar)
+    CreateFamilyDropdown(bar, qualityDropdown:GetHeight())
 
-    local cb = CreateFrame("Button", nil, bar)
-    cb:SetSize(16, 16)
-    cb:SetPoint("LEFT", familyDropdown, "RIGHT", 2, 0)
-
-    local cbBg = cb:CreateTexture(nil, "BORDER")
-    cbBg:SetAllPoints(cb)
-    cbBg:SetTexture("Interface\\Buttons\\UI-CheckBox-Up")
-    cbBg:SetAlpha(0.8)
-
-    local cbCheck = cb:CreateTexture(nil, "ARTWORK")
-    cbCheck:SetWidth(14); cbCheck:SetHeight(14)
-    cbCheck:SetPoint("CENTER", cb, "CENTER", 0, 0)
-    cbCheck:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
-    cbCheck:Hide()
-
-    local cbLabel = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    cbLabel:SetPoint("LEFT", cb, "RIGHT", 2, 0)
-    cbLabel:SetText(L.SHOW_ALL_CLASSES)
-
-    cb:SetScript("OnClick", function()
-        state.showAllClasses = not state.showAllClasses
-        if state.showAllClasses then cbCheck:Show() else cbCheck:Hide() end
-        Notify()
-    end)
+    local column = W.Column(bar)
+    local allClasses = W.Kit("toggle", column, {
+        key = "SHOW_ALL_CLASSES",
+        get = function() return state.showAllClasses end,
+        onChange = function(_, value)
+            state.showAllClasses = value and true or false
+            Notify()
+        end,
+    })
+    W.Lead(column, qualityDropdown:GetHeight() - allClasses:GetHeight() - 4)
 
     return bar
 end

@@ -173,11 +173,6 @@ local function BanVotesFor(class)
     end
 
     EbonBuilds.Profiles.EachBanList(class, vote)
-    for _, rb in pairs(EbonBuildsDB.remoteBuilds or {}) do
-        if not EbonBuilds.Profiles.HasBans(rb.author) then
-            consider(rb.author or "?", rb.class, rb.settings and rb.settings.echoBanList)
-        end
-    end
     local me = UnitName("player") or "self"
     for _, lb in pairs(EbonBuildsDB.builds or {}) do
         consider(me, lb.class, lb.settings and lb.settings.echoBanList)

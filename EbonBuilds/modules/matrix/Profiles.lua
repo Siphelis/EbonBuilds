@@ -8,6 +8,7 @@ local Codec = EbonAPI.Profile
 local Key = ns.Catalog.Key
 
 local db = nil
+local SAVED_SLOTS = ns.Const.SAVED_SLOTS
 
 local function Players()
     return db.account.players
@@ -73,7 +74,7 @@ local function Player(name, class)
     local players = Players()
     local player = players[name]
     if not player then
-        player = { c = class, t = 0, h = {}, e = {} }
+        player = { c = class, h = {}, e = {} }
         players[name] = player
     end
     return player
@@ -84,10 +85,10 @@ local function Reshape(player, class, change)
     if before then Contribute(before, player, -1) end
     change(player)
     player.c = class
-    player.t = time()
     local after = folds[class]
     if after then Contribute(after, player, 1) end
     ns.Matrix.Touch()
+    ns.Events.Fire("EB_PROFILES_CHANGED")
 end
 
 local function OnSlots(_, sender, class, slots)
@@ -99,40 +100,42 @@ local function OnSlots(_, sender, class, slots)
     for slot in pairs(player.h) do
         if not keep[slot] then stale = true; break end
     end
-    if not stale and player.c == class then
-        player.t = time()
-        return
-    end
+    if not stale and player.c == class then return end
 
     Reshape(player, class, function(p)
         for slot in pairs(p.h) do
             if not keep[slot] then
                 p.h[slot] = nil
                 p.e[slot] = nil
+                if p.k then p.k[slot] = nil end
+                if p.u then p.u[slot] = nil end
+                if p.l then p.l[slot] = nil end
             end
         end
     end)
 end
 
-local function OnBuild(_, sender, class, slot, hash, text)
+local function OnBuild(_, sender, class, slot, hash, text, locked)
+    if slot > SAVED_SLOTS then return end
     local player = Player(sender, class)
-    if player.h[slot] == hash and player.c == class then
-        player.t = time()
-        return
-    end
+    if player.h[slot] == hash and player.c == class then return end
 
     Reshape(player, class, function(p)
+        if p.h[slot] ~= hash and p.u then p.u[slot] = nil end
         p.h[slot] = hash
         p.e[slot] = text
+        if locked then
+            p.l = p.l or {}
+            p.l[slot] = locked
+        elseif p.l then
+            p.l[slot] = nil
+        end
     end)
 end
 
 local function OnBans(_, sender, class, hash, text)
     local player = Player(sender, class)
-    if player.xh == hash and player.c == class then
-        player.t = time()
-        return
-    end
+    if player.xh == hash and player.c == class then return end
 
     Reshape(player, class, function(p)
         p.xh = hash
@@ -142,6 +145,68 @@ local function OnBans(_, sender, class, hash, text)
     if ns.Matrix and ns.Matrix.InvalidateBanVotes then
         ns.Matrix.InvalidateBanVotes()
     end
+end
+
+local function Field(t, slot)
+    return t and t[slot]
+end
+
+function Profiles.Merge(name, class, builds)
+    if name == UnitName("player") then return false end
+    local players = Players()
+    if not players[name] and next(builds) == nil then return false end
+    local player = Player(name, class)
+    local changed = player.c ~= class
+    local hashes = {}
+    for slot in pairs(builds) do
+        if slot > SAVED_SLOTS then builds[slot] = nil end
+    end
+    for slot, b in pairs(builds) do
+        local signed = class .. ":" .. slot .. ":" .. b.echoes
+        if b.locked then signed = signed .. ":" .. b.locked end
+        local hash = Codec.Signature(signed)
+        hashes[slot] = hash
+        if player.h[slot] ~= hash or Field(player.k, slot) ~= b.category or Field(player.u, slot) ~= b.usage
+            or Field(player.l, slot) ~= b.locked then
+            changed = true
+        end
+    end
+    if not changed then
+        for slot in pairs(player.h) do
+            if not builds[slot] then
+                changed = true
+                break
+            end
+        end
+    end
+    if not changed then return false end
+
+    Reshape(player, class, function(p)
+        for slot in pairs(p.h) do
+            if not builds[slot] then p.h[slot], p.e[slot] = nil, nil end
+        end
+        p.k, p.u, p.l = nil, nil, nil
+        for slot, b in pairs(builds) do
+            p.h[slot], p.e[slot] = hashes[slot], b.echoes
+            if b.locked then
+                p.l = p.l or {}
+                p.l[slot] = b.locked
+            end
+            if b.category then
+                p.k = p.k or {}
+                p.k[slot] = b.category
+            end
+            if b.usage then
+                p.u = p.u or {}
+                p.u[slot] = b.usage
+            end
+        end
+    end)
+    return true
+end
+
+function Profiles.Each(fn)
+    for name, player in pairs(Players()) do fn(name, player) end
 end
 
 function Profiles.EachBuild(class, fn)
@@ -167,11 +232,6 @@ function Profiles.EachBanList(class, fn)
             end
         end
     end
-end
-
-function Profiles.HasBans(name)
-    local player = name and Players()[name]
-    return player ~= nil and player.x ~= nil and player.x ~= ""
 end
 
 function Profiles.Count(class)
@@ -213,6 +273,7 @@ end
 
 function Profiles.Init()
     db = api:DB({ account = { players = {} } })
+    for _, player in pairs(Players()) do player.t = nil end
 
     api:On("PROFILE_SLOTS", OnSlots)
     api:On("PROFILE_BUILD", OnBuild)

@@ -1,6 +1,7 @@
 EbonBuilds.BuildForm = {}
 
 local L = EbonBuilds.L
+local W = EbonBuilds.Widgets
 
 local classChangeCallbacks = {}
 
@@ -18,9 +19,25 @@ local CLASS_ORDER = {
 }
 local CLASS_TEXTURE = EbonBuilds.Const.CLASS_TEXTURE
 local QUALITY_COLOR = EbonBuilds.Const.QUALITY_HEX
-local QUALITY_BORDER_COLORS = EbonBuilds.Const.QUALITY_RGB
+local UNKNOWN_ICON  = "Interface\\Icons\\INV_Misc_QuestionMark"
+local EMPTY_SLOT    = "Interface\\Buttons\\UI-EmptySlot"
+
+local LABEL_WIDTH  = 56
+local CLASS_SIZE   = 28
+local CLASS_STEP   = 30
+local SPEC_SIZE    = 36
+local SPEC_STEP    = 40
+local SLOT_SIZE    = 36
+local SLOT_STEP    = 44
+local SLOT_X       = 140
+local TITLE_WIDTH  = 300
+local TITLE_MAX    = 40
+local DESC_LINES   = 14
+local PAGE_PADDING = 10
+local ROW_GAP      = 8
 
 local viewFrame
+local BuildViewFrame
 local state = {
     mode     = "create",
     id       = nil,
@@ -30,7 +47,6 @@ local state = {
     comments = "",
     locked = { nil, nil, nil, nil, nil },
     settings  = nil,
-    isPublic  = false,
 }
 function EbonBuilds.BuildForm.GetEditingClass()
     return state.class
@@ -64,7 +80,7 @@ end
 local classButtons = {}
 local specButtons  = {}
 local slotButtons  = {}
-local titleBox, commentsBox, publicToggle
+local titleBox, commentsBox
 
 local _linkHookInstalled = false
 
@@ -75,302 +91,177 @@ local function InstallLinkHook()
     hooksecurefunc("ChatEdit_InsertLink", function(link)
         if not link then return end
         local focus = GetCurrentKeyBoardFocus()
-        if focus and focus == commentsBox then
-            commentsBox:Insert(link)
+        if focus and commentsBox and focus == commentsBox.edit then
+            commentsBox.edit:Insert(link)
         end
     end)
 end
 
-local SetClassIcon     = EbonBuilds.Widgets.SetClassIcon
-local CreateIconButton = EbonBuilds.Widgets.CreateIconButton
-
-local function HighlightBorder(btn, on)
-    if not btn._border then
-        local b = btn:CreateTexture(nil, "OVERLAY")
-        b:SetAllPoints(btn)
-        b:SetTexture("Interface\\Buttons\\CheckButtonHilight")
-        b:SetBlendMode("ADD")
-        b:Hide()
-        btn._border = b
-    end
-    if on then btn._border:Show() else btn._border:Hide() end
+local function SpecEntry(i)
+    local specs = state.class and EbonBuilds.SpecData and EbonBuilds.SpecData[state.class]
+    return specs and specs[i]
 end
 
 local function RefreshClassSelection()
-    for token, btn in pairs(classButtons) do
-        HighlightBorder(btn, token == state.class)
-    end
+    for _, btn in pairs(classButtons) do btn:Refresh() end
 end
 
 local function RefreshSpecButtons()
-    local specs = state.class and EbonBuilds.SpecData and EbonBuilds.SpecData[state.class]
-    for i = 1, 3 do
-        local btn = specButtons[i]
-        local entry = specs and specs[i]
-        local icon  = entry and entry.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
-        local name  = entry and entry.name or string.format(L.SPEC_N, i)
-        if btn._icon then btn._icon:SetTexture(icon) end
-        btn:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:AddLine(name)
-            GameTooltip:Show()
-        end)
-        btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        HighlightBorder(btn, i == state.spec)
+    for i = 1, 3 do specButtons[i]:Refresh() end
+end
+
+local function Row(parent, key, labelWidth, spacing)
+    local row = parent:Add("bar", { spacing = spacing })
+    row:Add("text", { key = key, size = "medium", color = "heading", width = labelWidth - spacing })
+    return row
+end
+
+local function BuildClassGrid(parent)
+    local row = Row(parent, "FORM_CLASS", LABEL_WIDTH, CLASS_STEP - CLASS_SIZE)
+    for _, token in ipairs(CLASS_ORDER) do
+        local classToken = token
+        local btn = W.Kit("icon", row, {
+            size = CLASS_SIZE,
+            icon = function() return CLASS_ICON_TCOORDS[classToken] and CLASS_TEXTURE or UNKNOWN_ICON end,
+            checked = function() return state.class == classToken end,
+            text = function() return EbonBuilds.ClassName(classToken) end,
+            tip = function() end,
+            onClick = function()
+                if state.class == classToken then return end
+                state.class = classToken
+                if state.spec > 3 then state.spec = 1 end
+                RefreshClassSelection()
+                RefreshSpecButtons()
+                NotifyClassChange()
+            end,
+        })
+        W.ClassIcon(btn, function() return classToken end)
+        classButtons[classToken] = btn
     end
 end
 
-local function BuildClassGrid(parent, xAnchor, yAnchor)
-    local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint("TOPLEFT", parent, "TOPLEFT", xAnchor, yAnchor)
-    label:SetText(L.FORM_CLASS)
-    for i, token in ipairs(CLASS_ORDER) do
-        local btn = CreateIconButton(parent, 28)
-        SetClassIcon(btn._icon, token)
-        btn:SetPoint("TOPLEFT", parent, "TOPLEFT", xAnchor + 56 + (i - 1) * 30, yAnchor + 6)
-        btn:SetScript("OnClick", function()
-            if state.class == token then return end
-            state.class = token
-            if state.spec > 3 then state.spec = 1 end
-            RefreshClassSelection()
-            RefreshSpecButtons()
-            NotifyClassChange()
-        end)
-        classButtons[token] = btn
-    end
-end
-
-local function BuildSpecGrid(parent, xAnchor, yAnchor)
-    local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint("TOPLEFT", parent, "TOPLEFT", xAnchor, yAnchor)
-    label:SetText(L.FORM_SPEC)
+local function BuildSpecGrid(parent)
+    local row = Row(parent, "FORM_SPEC", LABEL_WIDTH, SPEC_STEP - SPEC_SIZE)
     for i = 1, 3 do
-        local btn = CreateIconButton(parent, 36)
-        btn:SetPoint("TOPLEFT", parent, "TOPLEFT", xAnchor + 56 + (i - 1) * 40, yAnchor + 6)
-        btn:SetScript("OnClick", function()
-            state.spec = i
-            RefreshSpecButtons()
-        end)
+        local index = i
+        local btn = W.Kit("icon", row, {
+            size = SPEC_SIZE,
+            icon = function()
+                local entry = SpecEntry(index)
+                return entry and entry.icon or UNKNOWN_ICON
+            end,
+            checked = function() return state.spec == index end,
+            text = function()
+                local entry = SpecEntry(index)
+                return entry and entry.name or string.format(L.SPEC_N, index)
+            end,
+            tip = function() end,
+            onClick = function()
+                state.spec = index
+                RefreshSpecButtons()
+            end,
+        })
         specButtons[i] = btn
     end
 end
 
-local function CreateBackdropEditBox(parent, width, height, multi)
-    local c = CreateFrame("Frame", nil, parent)
-    c:SetSize(width, height)
-    EbonBuilds.Widgets.InputBackdrop(c)
+local function BuildTitleField(parent)
+    titleBox = W.Field(parent, { key = "TITLE_LABEL", width = TITLE_WIDTH }, { maxLetters = TITLE_MAX })
+end
 
-    local box = CreateFrame("EditBox", nil, c)
-    box:SetPoint("TOPLEFT",     c, "TOPLEFT",     4,  -4)
-    box:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", -4,  4)
-    box:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
-    box:SetTextColor(1, 1, 1, 1)
-    box:SetAutoFocus(false)
-    if multi then
-        box:SetMultiLine(true)
-        box:SetMaxLetters(0)
-        box:EnableMouse(true)
+local function RefreshSlot(i)
+    local btn = slotButtons[i]
+    local id = state.locked[i]
+    btn:Refresh()
+    if id then
+        local data = EbonBuilds.Catalog.Entry(id)
+        W.SetRing(btn._ring, data and data.quality or 0)
     else
-        box:SetMaxLetters(40)
+        W.SetRing(btn._ring, nil)
     end
-    box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    return box, c
 end
 
-local function BuildTitleField(parent, x, y)
-    local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    lbl:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    lbl:SetText(L.TITLE_LABEL)
-    local box = CreateBackdropEditBox(parent, 300, 22, false)
-    box:GetParent():SetPoint("TOPLEFT", parent, "TOPLEFT", x + 56, y + 6)
-    titleBox = box
-end
-
-local function BuildLockedSlots(parent, x, y)
-    local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    lbl:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    lbl:SetText(L.LOCKED_ECHOES)
+local function BuildLockedSlots(parent)
+    local row = Row(parent, "LOCKED_ECHOES", SLOT_X, SLOT_STEP - SLOT_SIZE)
     for i = 1, EbonBuilds.Build.LOCKED_SLOTS do
-        local btn = CreateIconButton(parent, 36)
-        btn:SetPoint("TOPLEFT", parent, "TOPLEFT", x + 140 + (i - 1) * 44, y + 6)
-        btn._icon:SetTexture("Interface\\Buttons\\UI-EmptySlot")
-        btn.spellId = nil
-        btn:EnableMouse(true)
-        btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-        EbonBuilds.EchoTableRows.WireIconTooltip(btn)
-
-        local border = btn:CreateTexture(nil, "BORDER")
-        border:SetPoint("TOPLEFT",     btn, "TOPLEFT",     -2,  2)
-        border:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT",  2, -2)
-        border:Hide()
-        btn._qualityBorder = border
-
-        btn:SetScript("OnClick", function(_, button)
-            if button == "RightButton" then
-                state.locked[i] = nil
-                btn.spellId = nil
-                btn._quality = nil
-                btn._icon:SetTexture("Interface\\Buttons\\UI-EmptySlot")
-                btn._qualityBorder:Hide()
-                return
-            end
-            local settings = EbonBuilds.BuildForm.GetEditingSettings()
-            local banList = settings and settings.echoBanList or {}
-            local allList = EbonBuilds.Catalog.AllQualities()
-            local filtered = {}
-            for _, entry in ipairs(allList) do
-                if not banList[entry.spellId] then
-                    filtered[#filtered + 1] = entry
+        local index = i
+        local function Spell() return state.locked[index] end
+        local btn = W.Kit("icon", row, {
+            size = SLOT_SIZE,
+            icon = function()
+                local spellId = Spell()
+                return spellId and select(3, GetSpellInfo(spellId)) or EMPTY_SLOT
+            end,
+            onClick = function(_, button)
+                if button == "RightButton" then
+                    state.locked[index] = nil
+                    RefreshSlot(index)
+                    return
                 end
-            end
-            EbonBuilds.EchoPicker.Show(function(spellId, quality, name)
-                state.locked[i] = spellId
-                btn.spellId = spellId
-                btn._quality = quality
-                btn._icon:SetTexture(select(3, GetSpellInfo(spellId)))
-                local bc = QUALITY_BORDER_COLORS[quality] or QUALITY_BORDER_COLORS[0]
-                btn._qualityBorder:SetTexture(bc[1], bc[2], bc[3])
-                btn._qualityBorder:Show()
-            end, filtered)
-        end)
+                local settings = EbonBuilds.BuildForm.GetEditingSettings()
+                local banList = settings and settings.echoBanList or {}
+                local allList = EbonBuilds.Catalog.AllQualities()
+                local filtered = {}
+                for _, entry in ipairs(allList) do
+                    if not banList[entry.spellId] then
+                        filtered[#filtered + 1] = entry
+                    end
+                end
+                EbonBuilds.EchoPicker.Show(function(spellId)
+                    state.locked[index] = spellId
+                    RefreshSlot(index)
+                end, filtered)
+            end,
+        })
+        W.SpellTip(btn, Spell, { describe = true })
+        btn._ring = W.Ring(btn)
         slotButtons[i] = btn
     end
 end
 
-local descriptionPlaceholder
-
-local function RefreshDescriptionPlaceholder()
-    if not descriptionPlaceholder or not commentsBox then return end
-    if commentsBox:HasFocus() then
-        descriptionPlaceholder:Hide()
-        return
-    end
-    if (commentsBox:GetText() or "") == "" then
-        descriptionPlaceholder:Show()
-    else
-        descriptionPlaceholder:Hide()
-    end
+local function InsertLinkTooltip(lines)
+    lines:Add(L.INSERT_LINK_BODY, "text", true)
+    lines:Add(" ")
+    lines:Add(L.INSERT_LINK_HINT1, "muted", true)
+    lines:Add(L.INSERT_LINK_HINT2, "muted", true)
 end
 
-local function BuildDescriptionField(parent, x, y, height)
-    local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    lbl:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    lbl:SetText(L.DESCRIPTION_LABEL)
+local function BuildDescriptionField(parent, width)
+    local row = Row(parent, "DESCRIPTION_LABEL", LABEL_WIDTH * 3, 0)
+    local push = W.Gap(row, 1, 1)
+    local insertBtn = W.Kit("button", row, {
+        key = "INSERT_LINK_BUTTON",
+        tip = InsertLinkTooltip,
+        onClick = function()
+            EbonBuilds.EchoPicker.Show(function(spellId, quality, name)
+                local color = QUALITY_COLOR[quality] or "ffffff"
+                local link  = "|cff" .. color .. "|Hecho:" .. spellId .. "|h[" .. name .. "]|h|r"
+                local edit = commentsBox.edit
+                if edit:HasFocus() then
+                    edit:Insert(link)
+                else
+                    edit:SetText((edit:GetText() or "") .. link)
+                end
+            end)
+        end,
+    })
+    push.spec.width = math.max(1, width - LABEL_WIDTH * 3 - insertBtn:GetWidth())
+    push:SetWidth(push.spec.width)
+    row:Layout()
 
-    local insertBtn = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    insertBtn:SetWidth(110)
-    insertBtn:SetHeight(20)
-    insertBtn:SetPoint("TOPLEFT", parent, "TOPLEFT", x + 90, y + 2)
-    insertBtn:SetText(L.INSERT_LINK_BUTTON)
-    insertBtn:SetScript("OnClick", function()
-        EbonBuilds.EchoPicker.Show(function(spellId, quality, name)
-            local color = QUALITY_COLOR[quality] or "ffffff"
-            local link  = "|cff" .. color .. "|Hecho:" .. spellId .. "|h[" .. name .. "]|h|r"
-            if commentsBox:HasFocus() then
-                commentsBox:Insert(link)
-            else
-                commentsBox:SetText((commentsBox:GetText() or "") .. link)
-            end
-        end)
-    end)
-    insertBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:ClearLines()
-        GameTooltip:AddLine(L.INSERT_LINK_TITLE, 1, 0.82, 0, 1)
-        GameTooltip:AddLine(L.INSERT_LINK_BODY, 0.8, 0.8, 0.8, 1)
-        GameTooltip:AddLine(" ", 1, 1, 1, 1)
-        GameTooltip:AddLine(L.INSERT_LINK_HINT1, 0.6, 0.6, 0.6, 1)
-        GameTooltip:AddLine(L.INSERT_LINK_HINT2, 0.6, 0.6, 0.6, 1)
-        GameTooltip:Show()
-    end)
-    insertBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-
-    local container = CreateFrame("Frame", nil, parent)
-    container:SetPoint("TOPLEFT",     parent, "TOPLEFT",     x,   y - 24)
-    container:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -30, 50)
-    EbonBuilds.Widgets.InputBackdrop(container)
-
-    local scroll = CreateFrame("ScrollFrame", "EbonBuildsBuildFormDescriptionSF", container, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT",     container, "TOPLEFT",      4, -4)
-    scroll:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -4,  4)
-
-    local box = CreateFrame("EditBox", nil, scroll)
-    box:SetMultiLine(true)
-    box:SetMaxLetters(0)
-    box:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
-    box:SetWidth(420)
-    box:SetAutoFocus(false)
-    box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    scroll:SetScrollChild(box)
-    commentsBox = box
-
-    local descMeasure = box:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    descMeasure:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
-    descMeasure:SetWidth(410)
-    descMeasure:Hide()
-
-    local hint = box:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-    hint:SetPoint("TOPLEFT",  box, "TOPLEFT",   2, -2)
-    hint:SetPoint("TOPRIGHT", box, "TOPRIGHT", -2, -2)
-    hint:SetJustifyH("LEFT")
-    hint:SetJustifyV("TOP")
-    hint:SetTextColor(0.5, 0.5, 0.5, 1)
-    hint:SetText(L.FORM_DESCRIPTION_HINT)
-    descriptionPlaceholder = hint
-
-    box:SetScript("OnEditFocusGained", function() descriptionPlaceholder:Hide() end)
-    box:SetScript("OnEditFocusLost", function(self)
-        if (self:GetText() or "") == "" then descriptionPlaceholder:Show() end
-    end)
-    box:SetScript("OnTextChanged", function(self)
-        if self:HasFocus() then
-            descriptionPlaceholder:Hide()
-        else
-            if (self:GetText() or "") == "" then
-                descriptionPlaceholder:Show()
-            else
-                descriptionPlaceholder:Hide()
-            end
-        end
-
-        descMeasure:SetText(self:GetText() or "")
-        local textHeight = descMeasure:GetStringHeight() or 0
-        local contentH = math.max(textHeight + 10, scroll:GetHeight())
-        self:SetHeight(contentH)
-
-        local sbar = _G["EbonBuildsBuildFormDescriptionSFScrollBar"]
-        if sbar then
-            local maxScroll = math.max(0, contentH - scroll:GetHeight())
-            sbar:SetMinMaxValues(0, maxScroll)
-
-            local cursorByte = self:GetCursorPosition() or 0
-            local textBefore = (self:GetText() or ""):sub(1, cursorByte)
-            descMeasure:SetText(textBefore)
-            local cursorY = descMeasure:GetStringHeight() or 0
-
-            local scrollTop = sbar:GetValue() or 0
-            local visibleH = scroll:GetHeight()
-            local cursorScreenY = cursorY - scrollTop
-
-            if cursorScreenY > visibleH - 20 then
-                sbar:SetValue(math.min(maxScroll, cursorY - visibleH + 20))
-            elseif cursorScreenY < 4 then
-                sbar:SetValue(math.max(0, cursorY - 20))
-            end
-        end
-    end)
+    commentsBox = W.Field(parent, { width = width, lines = DESC_LINES }, { placeholder = "FORM_DESCRIPTION_HINT" })
 end
 
 local function CollectFromInputs()
-    state.title    = titleBox:GetText() or ""
-    state.comments = commentsBox:GetText() or ""
+    state.title    = titleBox.edit:GetText() or ""
+    state.comments = commentsBox.edit:GetText() or ""
 end
 
 local function OnSave()
     CollectFromInputs()
     if strtrim(state.title) == "" then
         EbonBuilds.Log.Warn(L.FORM_NEEDS_TITLE)
-        if titleBox then titleBox:SetFocus() end
+        if titleBox then titleBox.edit:SetFocus() end
         return
     end
     local weights = EbonBuilds.Draft.weights
@@ -379,7 +270,6 @@ local function OnSave()
             title = state.title, class = state.class, spec = state.spec,
             comments = state.comments, lockedEchoes = EbonBuilds.Build.CopyLocked(state.locked),
             settings = state.settings,
-            isPublic = state.isPublic,
             echoWeights = weights,
         })
         state.mode = "edit"
@@ -390,7 +280,6 @@ local function OnSave()
             title = state.title, class = state.class, spec = state.spec,
             comments = state.comments, lockedEchoes = EbonBuilds.Build.CopyLocked(state.locked),
             settings = state.settings,
-            isPublic = state.isPublic,
             echoWeights = weights,
         })
     end
@@ -402,9 +291,6 @@ local function OnSave()
     end
     if EbonBuilds.BuildTabs and EbonBuilds.BuildTabs.OnBuildSaved then
         EbonBuilds.BuildTabs.OnBuildSaved()
-    end
-    if EbonBuilds.BuildTabs and EbonBuilds.BuildTabs.EnableEchoesTab then
-        EbonBuilds.BuildTabs.EnableEchoesTab()
     end
     local active = EbonBuilds.Build.GetActive()
     if active then
@@ -439,30 +325,11 @@ EbonBuilds.BuildForm.Save   = OnSave
 EbonBuilds.BuildForm.Cancel = OnCancel
 
 ApplyStateToInputs = function()
-    titleBox:SetText(state.title or "")
-    commentsBox:SetText(state.comments or "")
-    RefreshDescriptionPlaceholder()
+    titleBox:SetValue(state.title or "")
+    commentsBox:SetValue(state.comments or "")
     RefreshClassSelection()
     RefreshSpecButtons()
-    publicToggle:SetText(state.isPublic and L.PUBLIC or L.MAKE_PUBLIC)
-    for i = 1, EbonBuilds.Build.LOCKED_SLOTS do
-        local id = state.locked[i]
-        local btn = slotButtons[i]
-        btn.spellId = id
-        if id then
-            btn._icon:SetTexture(select(3, GetSpellInfo(id)))
-            local data = EbonBuilds.Catalog.Entry(id)
-            local quality = data and data.quality or 0
-            btn._quality = quality
-            local bc = QUALITY_BORDER_COLORS[quality] or QUALITY_BORDER_COLORS[0]
-            btn._qualityBorder:SetTexture(bc[1], bc[2], bc[3])
-            btn._qualityBorder:Show()
-        else
-            btn._icon:SetTexture("Interface\\Buttons\\UI-EmptySlot")
-            btn._quality = nil
-            btn._qualityBorder:Hide()
-        end
-    end
+    for i = 1, EbonBuilds.Build.LOCKED_SLOTS do RefreshSlot(i) end
 end
 
 local function CloneSettings(src)
@@ -487,7 +354,6 @@ LoadFromBuild = function(build)
     state.spec     = build.spec     or 1
     state.comments = build.comments or ""
     state.settings = CloneSettings(build.settings)
-    state.isPublic = build.isPublic or false
     for i = 1, EbonBuilds.Build.LOCKED_SLOTS do state.locked[i] = build.lockedEchoes and build.lockedEchoes[i] or nil end
     EbonBuilds.Draft.isEditing = true
     EbonBuilds.Draft.weights = {}
@@ -506,7 +372,6 @@ local function LoadDefaults()
     state.spec     = EbonBuilds.Build.PlayerTopTalentTab()
     state.comments = ""
     state.settings = EbonBuilds.Build.DefaultSettings()
-    state.isPublic = false
     for i = 1, EbonBuilds.Build.LOCKED_SLOTS do state.locked[i] = nil end
     EbonBuilds.Draft.isEditing = true
     EbonBuilds.Draft.weights = {}
@@ -522,7 +387,6 @@ local function LoadFromWizardPrefill()
     state.spec     = pre.spec or EbonBuilds.Build.PlayerTopTalentTab()
     state.comments = pre.comments or ""
     state.settings = pre.settings or EbonBuilds.Build.DefaultSettings()
-    state.isPublic = pre.isPublic or false
     for i = 1, EbonBuilds.Build.LOCKED_SLOTS do state.locked[i] = (pre.lockedEchoes and pre.lockedEchoes[i]) or nil end
     EbonBuilds.Draft.isEditing = true
     EbonBuilds.Draft.weights = EbonBuilds.Draft.weights or {}
@@ -536,7 +400,8 @@ local function TargetMatchesState(context)
 end
 
 function EbonBuilds.BuildForm.Mount(container, context)
-    EbonBuilds.Widgets.Attach(viewFrame, container)
+    viewFrame = viewFrame or BuildViewFrame(container)
+    W.ShowPage(viewFrame)
 
     context = context or {}
     local keepState = TargetMatchesState(context)
@@ -552,43 +417,28 @@ function EbonBuilds.BuildForm.Mount(container, context)
 
     ApplyStateToInputs()
     NotifyClassChange()
-    viewFrame:Show()
 end
 
 function EbonBuilds.BuildForm.Unmount()
     if viewFrame and titleBox and commentsBox then
-        state.title    = titleBox:GetText() or state.title
-        state.comments = commentsBox:GetText() or state.comments
+        state.title    = titleBox.edit:GetText() or state.title
+        state.comments = commentsBox.edit:GetText() or state.comments
     end
     if viewFrame then viewFrame:Hide() end
 end
 
-local function BuildViewFrame()
-    local f = CreateFrame("Frame", nil, UIParent)
-
-    local header = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    header:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -10)
-    header:SetText(L.FORM_HEADER)
-
-    publicToggle = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    publicToggle:SetSize(120, 22)
-    publicToggle:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -10)
-    publicToggle:SetText(L.MAKE_PUBLIC)
-    publicToggle:SetScript("OnClick", function(self)
-        state.isPublic = not state.isPublic
-        self:SetText(state.isPublic and L.PUBLIC or L.MAKE_PUBLIC)
-    end)
-
-    BuildClassGrid(f, 10, -36)
-    BuildSpecGrid(f, 10, -76)
-    BuildTitleField(f, 10, -124)
-    BuildLockedSlots(f, 10, -160)
-    BuildDescriptionField(f, 10, -210, 180)
+BuildViewFrame = function(container)
+    local f = W.Page(container, { padding = PAGE_PADDING, spacing = ROW_GAP })
+    local width = f.spec.width - PAGE_PADDING * 2
+    f:Add("text", { key = "FORM_HEADER", size = "medium", width = width })
+    BuildClassGrid(f)
+    BuildSpecGrid(f)
+    BuildTitleField(f)
+    BuildLockedSlots(f)
+    BuildDescriptionField(f, width)
     return f
 end
 
 function EbonBuilds.BuildForm.Init()
-    viewFrame = BuildViewFrame()
-    viewFrame:Hide()
     InstallLinkHook()
 end

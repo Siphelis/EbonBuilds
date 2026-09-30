@@ -4,271 +4,80 @@ local L = EbonBuilds.L
 
 local WINDOW_WIDTH  = 800
 local WINDOW_HEIGHT = 550
+local PADDING       = 12
 local LEFT_WIDTH    = 200
-local FRAME_NAME    = "EbonBuildsMainWindow"
+local COLUMN_GAP    = 6
+local MENU_GAP      = 4
+local GEAR_ICON     = "Interface\\Icons\\Trade_Engineering"
 
-local function ApplyBackdrop(frame)
-    frame:SetBackdrop({
-        bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile     = true,
-        tileSize = 32,
-        edgeSize = 32,
-        insets   = { left = 11, right = 12, top = 12, bottom = 11 },
+EbonBuilds.MainWindow.VIEW_WIDTH = WINDOW_WIDTH - PADDING * 2 - LEFT_WIDTH - COLUMN_GAP
+EbonBuilds.MainWindow.HEIGHT     = WINDOW_HEIGHT
+
+local function Settings()
+    return EbonBuildsDB.globalSettings
+end
+
+function EbonBuilds.MainWindow.RegisterOptions()
+    EbonBuilds.api:Options({
+        type = "group",
+        name = "EbonBuilds",
+        get = function(info) return Settings()[info[#info]] end,
+        set = function(info, value) Settings()[info[#info]] = value end,
+        args = {
+            evalDelay = {
+                type = "range", order = 1, min = 0.1, max = 3, step = 0.1,
+                name = function() return L.SETTINGS_DELAY end,
+                desc = function() return L.SETTINGS_DELAY_HINT end,
+            },
+            toastDuration = {
+                type = "range", order = 2, min = 0.1, max = 3, step = 0.1,
+                name = function() return L.SETTINGS_TOAST end,
+            },
+        },
     })
 end
 
-local function CreateTitleBar(frame)
-    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("TOP", frame, "TOP", 0, -16)
-    title:SetText("EbonBuilds")
-
-    local dragRegion = CreateFrame("Frame", nil, frame)
-    dragRegion:SetPoint("TOPLEFT",  frame, "TOPLEFT",  0,   0)
-    dragRegion:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -37, 0)
-    dragRegion:SetHeight(30)
-    dragRegion:EnableMouse(true)
-    dragRegion:RegisterForDrag("LeftButton")
-    dragRegion:SetScript("OnDragStart", function() frame:StartMoving() end)
-    dragRegion:SetScript("OnDragStop",  function()
-        frame:StopMovingOrSizing()
-        EbonBuilds.MainWindow._SavePosition()
-    end)
-end
-
-local function CreateCloseButton(frame)
-    local closeBtn = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-    closeBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -5, -5)
-    closeBtn:SetFrameLevel(100)
-    closeBtn:SetScript("OnClick", function() frame:Hide() end)
-    return closeBtn
-end
-
-local function BuildSettingsPopup()
-    local popup = CreateFrame("Frame", "EbonBuildsGlobalSettingsPopup", UIParent)
-    popup:SetSize(340, 230)
-    popup:SetPoint("CENTER", UIParent, "CENTER")
-    popup:SetFrameStrata("DIALOG")
-    popup:SetToplevel(true)
-    popup:SetMovable(true)
-    popup:EnableMouse(true)
-    popup:SetBackdrop({
-        bgFile   = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile     = true, tileSize = 8, edgeSize = 32,
-        insets   = { left = 11, right = 12, top = 12, bottom = 11 },
-    })
-    popup:SetBackdropColor(0.08, 0.08, 0.08, 1)
-    popup:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
-    popup:Hide()
-
-    local title = popup:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("TOP", popup, "TOP", 0, -16)
-    title:SetText(L.SETTINGS_TITLE)
-
-    local drag = CreateFrame("Frame", nil, popup)
-    drag:SetPoint("TOPLEFT",  popup, "TOPLEFT",  0,   0)
-    drag:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -37, 0)
-    drag:SetHeight(30)
-    drag:EnableMouse(true)
-    drag:RegisterForDrag("LeftButton")
-    drag:SetScript("OnDragStart", function() popup:StartMoving() end)
-    drag:SetScript("OnDragStop",  function() popup:StopMovingOrSizing() end)
-
-    local closeBtn = CreateFrame("Button", nil, popup, "UIPanelCloseButton")
-    closeBtn:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -5, -5)
-    closeBtn:SetScript("OnClick", function() popup:Hide() end)
-
-    local function AddSlider(labelText, yAnchor, yOffset, value)
-        local label = popup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        label:SetPoint("TOPLEFT", yAnchor, "BOTTOMLEFT", 0, yOffset)
-
-        local slider = CreateFrame("Slider", nil, popup)
-        slider:SetOrientation("HORIZONTAL")
-        slider:SetWidth(190)
-        slider:SetHeight(20)
-        slider:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
-        slider:SetMinMaxValues(0.1, 3.0)
-        slider:SetValueStep(0.1)
-        slider:SetValue(value)
-        slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
-
-        local track = slider:CreateTexture(nil, "BACKGROUND")
-        track:SetTexture("Interface\\Buttons\\WHITE8X8")
-        track:SetVertexColor(0.25, 0.25, 0.25, 1)
-        track:SetHeight(6)
-        track:SetPoint("CENTER", slider)
-        track:SetPoint("LEFT", slider)
-        track:SetPoint("RIGHT", slider)
-
-        local valText = popup:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        valText:SetPoint("LEFT", slider, "RIGHT", 6, 0)
-
-        local function RefreshLabel()
-            local v = slider:GetValue()
-            label:SetText(string.format("%s %.1fs", labelText, v))
-            valText:SetText(string.format("%.1fs", v))
-        end
-
-        slider:SetScript("OnValueChanged", RefreshLabel)
-        RefreshLabel()
-
-        return slider
-    end
-
-    local delayLabel = popup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    delayLabel:SetPoint("TOPLEFT", popup, "TOPLEFT", 24, -44)
-    delayLabel:SetText(L.SETTINGS_DELAY)
-
-    local delayFlavor = popup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    delayFlavor:SetPoint("TOPLEFT", delayLabel, "BOTTOMLEFT", 0, -2)
-    delayFlavor:SetPoint("RIGHT", popup, "RIGHT", -24, 0)
-    delayFlavor:SetJustifyH("LEFT")
-    delayFlavor:SetText(L.SETTINGS_DELAY_HINT)
-
-    local delaySlider = CreateFrame("Slider", nil, popup)
-    delaySlider:SetOrientation("HORIZONTAL")
-    delaySlider:SetWidth(190)
-    delaySlider:SetHeight(20)
-    delaySlider:SetPoint("TOPLEFT", delayFlavor, "BOTTOMLEFT", 0, -4)
-    delaySlider:SetMinMaxValues(0.1, 3.0)
-    delaySlider:SetValueStep(0.1)
-    delaySlider:SetValue(2)
-    delaySlider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
-
-    local delayTrack = delaySlider:CreateTexture(nil, "BACKGROUND")
-    delayTrack:SetTexture("Interface\\Buttons\\WHITE8X8")
-    delayTrack:SetVertexColor(0.25, 0.25, 0.25, 1)
-    delayTrack:SetHeight(6)
-    delayTrack:SetPoint("CENTER", delaySlider)
-    delayTrack:SetPoint("LEFT", delaySlider)
-    delayTrack:SetPoint("RIGHT", delaySlider)
-
-    local delayValText = popup:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    delayValText:SetPoint("LEFT", delaySlider, "RIGHT", 6, 0)
-
-    delaySlider:SetScript("OnValueChanged", function()
-        local v = delaySlider:GetValue()
-        delayValText:SetText(string.format("%.1fs", v))
-    end)
-    delaySlider:GetScript("OnValueChanged")()
-
-    local toastSlider = AddSlider(L.SETTINGS_TOAST, delaySlider, -14, 3)
-
-    local saveBtn = CreateFrame("Button", nil, popup, "UIPanelButtonTemplate")
-    saveBtn:SetSize(80, 22)
-    saveBtn:SetPoint("BOTTOM", popup, "BOTTOM", 43, 18)
-    saveBtn:SetText(L.SAVE)
-    saveBtn:SetScript("OnClick", function()
-        local gs = EbonBuildsDB.globalSettings
-        gs.evalDelay = delaySlider:GetValue()
-        gs.toastDuration = toastSlider:GetValue()
-        popup:Hide()
-    end)
-
-    local cancelBtn = CreateFrame("Button", nil, popup, "UIPanelButtonTemplate")
-    cancelBtn:SetSize(80, 22)
-    cancelBtn:SetPoint("BOTTOM", popup, "BOTTOM", -43, 18)
-    cancelBtn:SetText(L.CANCEL)
-    cancelBtn:SetScript("OnClick", function() popup:Hide() end)
-
-    popup:SetScript("OnShow", function()
-        local gs = EbonBuildsDB.globalSettings
-        delaySlider:SetValue(gs.evalDelay or 2)
-        toastSlider:SetValue(gs.toastDuration or 3)
-    end)
-
-    return popup
-end
-
-local function CreateSettingsButton(frame, popup, closeBtn)
-    local btn = CreateFrame("Button", nil, frame)
-    btn:SetSize(20, 20)
-    btn:SetPoint("RIGHT", closeBtn, "LEFT", -2, 0)
-    btn:SetFrameLevel(100)
-
-    local icon = btn:CreateTexture(nil, "OVERLAY")
-    icon:SetTexture("Interface\\Icons\\Trade_Engineering")
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    icon:SetAllPoints(btn)
-
-    btn:SetScript("OnClick", function()
-        if popup:IsShown() then popup:Hide() else popup:Show() end
-    end)
-end
-
-local function CreateLeftColumn(frame)
-    local col = CreateFrame("Frame", nil, frame)
-    col:SetPoint("TOPLEFT",    frame, "TOPLEFT",    14, -34)
-    col:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14,  14)
-    col:SetWidth(LEFT_WIDTH)
-    return col
-end
-
-local function CreateRightPanel(frame)
-    local panel = CreateFrame("Frame", nil, frame)
-    panel:SetPoint("TOPLEFT",     frame, "TOPLEFT",     14 + LEFT_WIDTH + 6, -34)
-    panel:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -14, 14)
-    return panel
-end
-
-local function SavePosition(frame)
-    local point, _, relPoint, x, y = frame:GetPoint()
-    if not point then return end
-    EbonBuildsDB.windowPos = { point = point, relPoint = relPoint, x = x, y = y }
-end
-
-local function RestorePosition(frame)
+local function StartPoint()
     local pos = EbonBuildsDB.windowPos
-    frame:ClearAllPoints()
     if pos and pos.point then
-        frame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
-    else
-        frame:SetPoint("CENTER", UIParent, "CENTER")
+        return { pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0 }
     end
-end
-
-function EbonBuilds.MainWindow._SavePosition()
-    local frame = EbonBuilds.MainWindow._frame
-    if frame then SavePosition(frame) end
+    return nil
 end
 
 local function BuildFrame()
-    local frame = CreateFrame("Frame", FRAME_NAME, UIParent)
-    frame:SetWidth(WINDOW_WIDTH)
-    frame:SetHeight(WINDOW_HEIGHT)
-    frame:SetMovable(true)
-    frame:SetClampedToScreen(true)
-    frame:SetFrameStrata("DIALOG")
-    frame:SetToplevel(true)
-    RestorePosition(frame)
+    local frame = EbonBuilds.api:Window("main", {
+        text    = "EbonBuilds",
+        width   = WINDOW_WIDTH,
+        height  = WINDOW_HEIGHT,
+        layout  = "HORIZONTAL",
+        spacing = COLUMN_GAP,
+        padding = PADDING,
+        point   = StartPoint(),
+        buttons = {
+            {
+                icon = GEAR_ICON, key = "SETTINGS_TITLE", tip = function() end,
+                onClick = function() EbonBuilds.api:OpenOptions() end,
+            },
+        },
+    })
 
-    tinsert(UISpecialFrames, FRAME_NAME)
-
-    ApplyBackdrop(frame)
-    CreateTitleBar(frame)
-    local closeBtn = CreateCloseButton(frame)
-
-    local settingsPopup = BuildSettingsPopup()
-    CreateSettingsButton(frame, settingsPopup, closeBtn)
-    frame._settingsPopup = settingsPopup
-
-    frame:SetScript("OnHide", function()
+    frame:HookScript("OnHide", function()
         if EbonBuilds.SessionHistory and EbonBuilds.SessionHistory.Hide then
             EbonBuilds.SessionHistory.Hide()
         end
     end)
 
-    frame:Hide()
     return frame
 end
 
 local function Build()
     if EbonBuilds.MainWindow._frame then return end
 
-    local frame = BuildFrame()
-    local left  = CreateLeftColumn(frame)
-    local right = CreateRightPanel(frame)
+    local frame  = BuildFrame()
+    local height = WINDOW_HEIGHT - frame.head:GetHeight() - PADDING
+    local left   = frame:Add("bar", { layout = "VERTICAL", spacing = MENU_GAP, width = LEFT_WIDTH, height = height })
+    local right  = frame:Add("bar", { layout = "VERTICAL", spacing = 0, width = EbonBuilds.MainWindow.VIEW_WIDTH, height = height })
 
     EbonBuilds.MainWindow._frame = frame
 
@@ -325,7 +134,7 @@ function EbonBuilds.MainWindow.Toggle()
     Build()
     local frame = EbonBuilds.MainWindow._frame
     if frame:IsShown() then
-        frame:Hide()
+        frame:Close()
     else
         EbonBuilds.MainWindow._ShowInitialView()
         frame:Show()

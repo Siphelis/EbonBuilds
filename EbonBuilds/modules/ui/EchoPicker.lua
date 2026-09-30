@@ -1,10 +1,17 @@
 EbonBuilds.EchoPicker = {}
 
+local W = EbonBuilds.Widgets
+
 local QUALITY_COLOR = EbonBuilds.Const.QUALITY_HEX
 
-local ROW_HEIGHT = 24
+local ROW_HEIGHT    = 24
+local WINDOW_WIDTH  = 400
+local WINDOW_HEIGHT = 500
+local PADDING       = 12
+local GAP           = 6
+local SEARCH_WIDTH  = WINDOW_WIDTH - PADDING * 2
 
-local frame, searchBox, scrollFrame, scrollChild, scrollBar
+local frame, searchBox, scroll, scrollChild
 local allEntries   = {}
 local filtered     = {}
 local rowPool      = {}
@@ -44,54 +51,49 @@ local function ApplySearch()
     end
 end
 
-local function CreateRow(parent, index)
-    local row = CreateFrame("Button", nil, parent)
-    row:SetHeight(ROW_HEIGHT)
+local function RowText(self)
+    local entry = self._entry
+    if not entry then return "" end
+    return "|cff" .. (QUALITY_COLOR[entry.quality] or "ffffff") .. entry.name .. "|r"
+end
 
-    local hl = row:CreateTexture(nil, "HIGHLIGHT")
-    hl:SetAllPoints(row)
-    hl:SetTexture(1, 1, 1, 0.1)
+local function RowIcon(self)
+    return self._entry and select(3, GetSpellInfo(self._entry.spellId)) or nil
+end
 
-    local icon = row:CreateTexture(nil, "ARTWORK")
-    icon:SetWidth(20)
-    icon:SetHeight(20)
-    icon:SetPoint("LEFT", row, "LEFT", 4, 0)
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    row._icon = icon
+local function RowPick(self, mouse)
+    if mouse ~= "LeftButton" or not self._entry then return end
+    local entry = self._entry
+    if onPick then onPick(entry.spellId, entry.quality, entry.name) end
+    frame:Close()
+end
 
-    local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint("LEFT",  icon, "RIGHT", 6, 0)
-    label:SetPoint("RIGHT", row,  "RIGHT", -4, 0)
-    label:SetJustifyH("LEFT")
-    row._label = label
-    return row
+local function CreateRow()
+    return W.Kit("slot", scrollChild, {
+        width = scrollChild.spec.width, height = ROW_HEIGHT, icon = RowIcon, text = RowText, onClick = RowPick,
+    })
 end
 
 local function PopulateRow(row, index, entry)
+    row._entry = entry
     row:ClearAllPoints()
-    row:SetPoint("LEFT",  scrollChild, "LEFT",  0, 0)
-    row:SetPoint("RIGHT", scrollChild, "RIGHT", 0, 0)
-    row:SetPoint("TOP",   scrollChild, "TOP",   0, -(index - 1) * ROW_HEIGHT)
-    row._icon:SetTexture(select(3, GetSpellInfo(entry.spellId)))
-    local color = QUALITY_COLOR[entry.quality] or "ffffff"
-    row._label:SetText("|cff" .. color .. entry.name .. "|r")
-    row:SetScript("OnClick", function()
-        if onPick then onPick(entry.spellId, entry.quality, entry.name) end
-        frame:Hide()
-    end)
+    row:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -(index - 1) * ROW_HEIGHT)
+    row:Refresh()
     row:Show()
 end
 
 local function VisibleRowCount()
-    local h = scrollFrame and scrollFrame:GetHeight() or 0
-    if h <= 0 then h = 420 end
+    local h = W.ScrollView(scroll)
+    if h <= 1 then h = 420 end
     return math.ceil(h / ROW_HEIGHT) + 2
 end
 
-local function Render()
-    scrollChild:SetHeight(math.max(1, #filtered * ROW_HEIGHT))
+local rendering = false
 
-    local offset  = math.floor((scrollFrame:GetVerticalScroll() or 0) / ROW_HEIGHT)
+local function Draw()
+    W.ScrollHeight(scroll, #filtered * ROW_HEIGHT)
+
+    local offset  = math.floor(W.ScrollOffset(scroll) / ROW_HEIGHT)
     local visible = VisibleRowCount()
 
     for poolIdx = 1, visible do
@@ -99,7 +101,7 @@ local function Render()
         local entry   = filtered[listIdx]
         if entry then
             if not rowPool[poolIdx] then
-                rowPool[poolIdx] = CreateRow(scrollChild, poolIdx)
+                rowPool[poolIdx] = CreateRow()
             end
             PopulateRow(rowPool[poolIdx], listIdx, entry)
         elseif rowPool[poolIdx] then
@@ -109,70 +111,34 @@ local function Render()
     for i = visible + 1, #rowPool do rowPool[i]:Hide() end
 end
 
-local function ApplyBackdrop(f)
-    f:SetBackdrop({
-        bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile = true, tileSize = 32, edgeSize = 32,
-        insets = { left = 11, right = 12, top = 12, bottom = 11 },
-    })
-end
-
-local function CreateSearchBox(parent)
-    local container = CreateFrame("Frame", nil, parent)
-    container:SetSize(360, 22)
-    container:SetPoint("TOP", parent, "TOP", 0, -36)
-    EbonBuilds.Widgets.InputBackdrop(container)
-
-    local box = CreateFrame("EditBox", nil, container)
-    box:SetSize(354, 18)
-    box:SetPoint("CENTER", container, "CENTER", 0, 0)
-    box:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
-    box:SetTextColor(1, 1, 1, 1)
-    box:SetAutoFocus(false)
-    box:SetMaxLetters(60)
-    box:SetScript("OnTextChanged", function(self)
-        searchText = self:GetText():lower()
-        ApplySearch()
-        scrollFrame:SetVerticalScroll(0)
-        Render()
-    end)
-    box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    return box
+local function Render()
+    if rendering then return end
+    rendering = true
+    Draw()
+    rendering = false
 end
 
 local function BuildFrame()
-    local f = CreateFrame("Frame", "EbonBuildsEchoPicker", UIParent)
-    f:SetWidth(400)
-    f:SetHeight(500)
-    f:SetPoint("CENTER", UIParent, "CENTER")
+    local f = EbonBuilds.api:Window("picker", {
+        key = "PICK_ECHO", width = WINDOW_WIDTH, height = WINDOW_HEIGHT, layout = "VERTICAL", spacing = GAP,
+        padding = PADDING,
+    })
     f:SetFrameStrata("FULLSCREEN_DIALOG")
-    f:SetToplevel(true)
-    f:EnableMouse(true)
-    ApplyBackdrop(f)
 
-    local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("TOP", f, "TOP", 0, -14)
-    title:SetText(EbonBuilds.L.PICK_ECHO)
+    searchBox = W.Field(f, { width = SEARCH_WIDTH }, {
+        maxLetters = 60,
+        onText = function(text)
+            searchText = text:lower()
+            ApplySearch()
+            W.ScrollTo(scroll, 0)
+            Render()
+        end,
+    })
 
-    local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -5, -5)
-    close:SetScript("OnClick", function() f:Hide() end)
+    scroll = W.Scroll(f, { onScroll = Render })
+    scrollChild = scroll._content
+    W.ScrollSize(scroll, SEARCH_WIDTH, WINDOW_HEIGHT - f.head:GetHeight() - PADDING - searchBox:GetHeight() - GAP)
 
-    searchBox = CreateSearchBox(f)
-
-    scrollFrame = CreateFrame("ScrollFrame", "EbonBuildsEchoPickerSF", f, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT",     f, "TOPLEFT",      16, -70)
-    scrollFrame:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -36,  16)
-    scrollChild = CreateFrame("Frame", nil, scrollFrame)
-    scrollChild:SetWidth(340)
-    scrollChild:SetHeight(1)
-    scrollFrame:SetScrollChild(scrollChild)
-
-    scrollFrame:HookScript("OnVerticalScroll", function() Render() end)
-    scrollFrame:HookScript("OnSizeChanged", function() Render() end)
-
-    f:Hide()
     return f
 end
 
@@ -188,11 +154,11 @@ function EbonBuilds.EchoPicker.Show(callback, dataSource)
         allEntries = BuildEntries()
     end
     onPick = callback
-    searchBox:SetText("")
     searchText = ""
+    searchBox:SetValue("")
     ApplySearch()
     frame:Show()
-    scrollFrame:SetVerticalScroll(0)
+    W.ScrollTo(scroll, 0)
     Render()
-    searchBox:SetFocus()
+    searchBox.edit:SetFocus()
 end

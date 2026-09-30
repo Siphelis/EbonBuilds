@@ -103,15 +103,7 @@ local function OnPlayerEnteringWorld()
     TrackLevel(level)
 end
 
-local function ValidateAtCap(newLevel)
-    if newLevel ~= MAX_PLAYER_LEVEL then return end
-    local build = EbonBuilds.Build.GetActive()
-    if build and not build.validated then build.validated = true end
-end
-
 local function OnPlayerLevelUp(newLevel)
-    ValidateAtCap(newLevel)
-
     if not EbonBuildsDB.currentSessionIndex then
         CreateSession()
         return

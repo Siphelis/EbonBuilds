@@ -1,26 +1,62 @@
 EbonBuilds.BuildWizard = {}
 
 local L = EbonBuilds.L
+local W = EbonBuilds.Widgets
 
 local QUALITY_COLOR = EbonBuilds.Const.QUALITY_HEX
-local QUALITY_BORDER_COLORS = EbonBuilds.Const.QUALITY_RGB
 local QUALITY_LABELS = EbonBuilds.Const.QUALITY_NAME
-local FAMILIES = {}
-for i, key in ipairs({ "Tank", "Survivability", "Healer", "Caster", "Melee", "Ranged" }) do
-    FAMILIES[i] = { key = key, label = L.FAMILY_LONG[key] }
-end
+local EMPTY_SLOT = "Interface\\Buttons\\UI-EmptySlot"
+local FAMILY_KEYS = { "Tank", "Survivability", "Healer", "Caster", "Melee", "Ranged" }
 local WEIGHT_OPTIONS = {
-    { label = L.WEIGHT_WANT, value = 50 },
-    { label = L.WEIGHT_GOOD,   value = 40 },
-    { label = L.WEIGHT_OK,     value = 30 },
-    { label = L.WEIGHT_MEH,   value = 20 },
+    { key = "WEIGHT_WANT", value = 50 },
+    { key = "WEIGHT_GOOD", value = 40 },
+    { key = "WEIGHT_OK",   value = 30 },
+    { key = "WEIGHT_MEH",  value = 20 },
 }
+local FAMILY_CYCLE_KEYS = { [0] = "WIZARD_FAMILY_NONE", [10] = "WIZARD_FAMILY_SECONDARY", [20] = "WIZARD_FAMILY_PRIMARY" }
+local familyCycleValues = { 0, 10, 20 }
+local qualityValues = { 0, 5, 10, 15, 20, 25, 30, 35, 40 }
+
+local SLOT_SIZE     = 48
+local SLOT_SPACING  = 10
+local ROW_LABEL_W   = 130
+local CYCLE_W       = 100
+local ECHO_ICON     = 22
+local ECHO_NAME_W   = 140
+local NAV_W         = 80
+local DESC_LINES    = 12
+local MODE_BUTTON_W = 200
+local MODE_BUTTON_H = 40
+local CYCLE_ROW_W   = 360
+local STEP_W        = 200
+local TOP_GAP       = 10
+local CONTENT_TOP   = 40
+local FOOTER        = 50
+local FOOTER_BOTTOM = 20
 
 local viewFrame, contentArea
 local stepLabel, backBtn, nextBtn
 local RenderCurrentStep
 
 local state = {}
+local panes = {}
+
+local function ResetState()
+    state.step = 0
+    state.locked = { nil, nil, nil, nil, nil }
+    state.noveltyValue = 30
+    state.qualityBonus = { [0] = 0, [1] = 10, [2] = 20, [3] = 30, [4] = 40 }
+    state.familyPriorities = {}
+    state.echoes = {}
+    state.wizardTitle = ""
+    state.wizardDescription = ""
+end
+
+ResetState()
+
+local function Width()
+    return EbonBuilds.MainWindow.VIEW_WIDTH
+end
 
 local function BuildFilteredEchoList()
     local best = EbonBuilds.Catalog.BestByName()
@@ -45,67 +81,6 @@ local function BuildFilteredEchoList()
     return list
 end
 
-local CreateIconButton = EbonBuilds.Widgets.CreateIconButton
-
-local function HighlightButton(btn, on)
-    if not btn._hl then
-        local b = btn:CreateTexture(nil, "OVERLAY")
-        b:SetAllPoints(btn)
-        b:SetTexture("Interface\\Buttons\\CheckButtonHilight")
-        b:SetBlendMode("ADD")
-        b:Hide()
-        btn._hl = b
-    end
-    if on then btn._hl:Show() else btn._hl:Hide() end
-end
-
-local function ClearContent()
-    if not contentArea then return end
-    for _, child in ipairs({ contentArea:GetChildren() }) do
-        child:Hide()
-    end
-    for _, region in ipairs({ contentArea:GetRegions() }) do
-        region:Hide()
-    end
-end
-
-local widgetCache = {}
-
-local function CachedFontString(key, template, parent)
-    local w = widgetCache[key]
-    if not w then
-        w = (parent or contentArea):CreateFontString(nil, "OVERLAY", template)
-        widgetCache[key] = w
-    end
-    w:ClearAllPoints()
-    w:Show()
-    return w
-end
-
-local function CachedFrame(key, frameType, template, parent)
-    local w = widgetCache[key]
-    if not w then
-        w = CreateFrame(frameType, nil, parent or contentArea, template)
-        widgetCache[key] = w
-    end
-    w:ClearAllPoints()
-    w:Show()
-    return w
-end
-
-local function CachedIconButton(key, size, parent)
-    local w = widgetCache[key]
-    if not w then
-        w = CreateIconButton(parent or contentArea, size)
-        widgetCache[key] = w
-    end
-    w:ClearAllPoints()
-    w:SetWidth(size)
-    w:SetHeight(size)
-    w:Show()
-    return w
-end
-
 local function HasAdaptivePower()
     for i = 1, EbonBuilds.Build.LOCKED_SLOTS do
         local id = state.locked[i]
@@ -123,583 +98,357 @@ local function TotalSteps()
     return HasAdaptivePower() and 6 or 5
 end
 
-local function UpdateNavButtons()
-    local total = TotalSteps()
-    local realStep = state.step
+local function DisplayedStep()
     if not HasAdaptivePower() and state.step >= 2 then
-        realStep = state.step - 1
+        return state.step - 1
     end
-    stepLabel:SetText(string.format(L.WIZARD_STEP, realStep, total))
-    if state.step <= 0 then
-        backBtn:Disable()
-    else
-        backBtn:Enable()
+    return state.step
+end
+
+local function Cycle(values, current, step)
+    for i, v in ipairs(values) do
+        if v == current then
+            local nextIdx = i + step
+            if nextIdx > #values then nextIdx = 1 end
+            if nextIdx < 1 then nextIdx = #values end
+            return values[nextIdx]
+        end
     end
-    if state.step >= 6 then
-        nextBtn:SetText(L.CREATE_BUILD)
+    return 0
+end
+
+local function Line(parent, spec, kind)
+    spec.width = spec.width or Width() - 40
+    local text = W.Centered(parent, Width(), spec.width):Add(kind or "text", spec)
+    text.text:SetJustifyH("CENTER")
+    return text
+end
+
+local function Pane(step)
+    local pane = panes[step]
+    if not pane then
+        pane = W.Page(contentArea, { spacing = 0 })
+        pane._elements = {}
+        panes[step] = pane
+    end
+    return pane
+end
+
+local function Track(pane, element)
+    pane._elements[#pane._elements + 1] = element
+    return element
+end
+
+local function ShowPane(step)
+    local pane = panes[step]
+    W.ShowPage(pane)
+    for _, element in ipairs(pane._elements) do element:Refresh() end
+end
+
+local function Button(pane, spec)
+    return W.Kit("button", W.Centered(pane, Width(), spec.width), spec)
+end
+
+local function BuildStep0()
+    local pane = Pane(0)
+    W.Gap(pane, 1, 20)
+    Line(pane, { key = "WIZARD_S0_TITLE", size = "medium" })
+    W.Gap(pane, 1, 6)
+    Line(pane, { key = "WIZARD_S0_DESC" }, "status")
+    W.Gap(pane, 1, 12)
+    Button(pane, {
+        key = "WIZARD_MODE", width = MODE_BUTTON_W, height = MODE_BUTTON_H,
+        onClick = function()
+            state.step = 1
+            RenderCurrentStep()
+        end,
+    })
+    W.Gap(pane, 1, 2)
+    Line(pane, { key = "WIZARD_MODE_DESC" }, "status")
+    W.Gap(pane, 1, 18)
+    Button(pane, {
+        key = "PRO_MODE", width = MODE_BUTTON_W, height = MODE_BUTTON_H,
+        onClick = function()
+            EbonBuilds.ViewRouter.Show("buildTabs", { mode = "create" })
+        end,
+    })
+    W.Gap(pane, 1, 2)
+    Line(pane, { key = "PRO_MODE_DESC" }, "status")
+end
+
+local function RefreshLockedSlot(btn)
+    local spellId = state.locked[btn._index]
+    btn:Refresh()
+    if spellId then
+        local data = EbonBuilds.Catalog.Entry(spellId)
+        W.SetRing(btn._ring, data and data.quality or 0)
     else
-        nextBtn:SetText(L.NEXT)
+        W.SetRing(btn._ring, nil)
     end
 end
 
-local lockedButtons = {}
-
-local function RenderStep1()
-    ClearContent()
-
-    local slots = EbonBuilds.Build.LOCKED_SLOTS
-
-    local title = CachedFontString("s1.title", "GameFontHighlight")
-    title:SetPoint("TOP", contentArea, "TOP", 0, -20)
-    title:SetText(string.format(L.WIZARD_S1_TITLE, slots))
-
-    local slotSize = 48
-    local spacing  = 10
-    local totalW   = slots * slotSize + (slots - 1) * spacing
-    local startX   = -math.floor(totalW / 2)
-
-    for i = 1, slots do
-        local btn = CachedIconButton("s1.slot" .. i, slotSize)
-        btn:SetPoint("TOP", contentArea, "TOP", startX + (i - 1) * (slotSize + spacing), -90)
-        btn._icon:SetTexture("Interface\\Buttons\\UI-EmptySlot")
-        btn.spellId = nil
-        btn:EnableMouse(true)
-        btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-        EbonBuilds.EchoTableRows.WireIconTooltip(btn)
-
-        local border = btn._border
-        if not border then
-            border = btn:CreateTexture(nil, "BORDER")
-            border:SetPoint("TOPLEFT",     btn, "TOPLEFT",     -3,  3)
-            border:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT",  3, -3)
-            btn._border = border
-        end
-        border:Hide()
-
-        if state.locked[i] then
-            btn.spellId = state.locked[i]
-            btn._icon:SetTexture(select(3, GetSpellInfo(state.locked[i])))
-            local data = EbonBuilds.Catalog.Entry(state.locked[i])
-            local quality = data and data.quality or 0
-            local bc = QUALITY_BORDER_COLORS[quality] or QUALITY_BORDER_COLORS[0]
-            border:SetTexture(bc[1], bc[2], bc[3])
-            border:Show()
-        end
-
-        local idx = i
-        btn:SetScript("OnClick", function(_, button)
+local function LockedSlot(pane, index)
+    local slots = pane._slots
+    if slots[index] then return slots[index] end
+    local btn = W.Kit("icon", pane._slotRow, {
+        size = SLOT_SIZE,
+        icon = function(self)
+            local spellId = state.locked[self._index]
+            return spellId and select(3, GetSpellInfo(spellId)) or EMPTY_SLOT
+        end,
+        onClick = function(self, button)
+            local idx = self._index
             if button == "RightButton" then
                 state.locked[idx] = nil
-                btn.spellId = nil
-                btn._icon:SetTexture("Interface\\Buttons\\UI-EmptySlot")
-                btn._border:Hide()
+                RefreshLockedSlot(self)
                 return
             end
-            EbonBuilds.EchoPicker.Show(function(spellId, quality, _)
+            EbonBuilds.EchoPicker.Show(function(spellId)
                 state.locked[idx] = spellId
-                btn.spellId = spellId
-                btn._icon:SetTexture(select(3, GetSpellInfo(spellId)))
-                local bc = QUALITY_BORDER_COLORS[quality] or QUALITY_BORDER_COLORS[0]
-                btn._border:SetTexture(bc[1], bc[2], bc[3])
-                btn._border:Show()
+                RefreshLockedSlot(self)
             end, BuildFilteredEchoList())
-        end)
-        lockedButtons[i] = btn
-    end
+        end,
+    })
+    btn._index = index
+    W.SpellTip(btn, function(self) return state.locked[self._index] end, { describe = true })
+    btn._ring = W.Ring(btn)
+    slots[index] = btn
+    return btn
 end
 
-local noveltySlider, noveltyValueLabel
-
-local function RenderStep2()
-    ClearContent()
-
-    local title = CachedFontString("s2.title", "GameFontHighlight")
-    title:SetPoint("TOP", contentArea, "TOP", 0, -30)
-    title:SetText(L.WIZARD_S2_TITLE)
-
-    local desc = CachedFontString("s2.desc", "GameFontDisableSmall")
-    desc:SetPoint("TOP", contentArea, "TOP", 0, -52)
-    desc:SetText(L.WIZARD_S2_DESC)
-
-    local slider = noveltySlider
-    if not slider then
-        slider = CreateFrame("Slider", "EbonBuildsWizardNoveltySlider", contentArea, "OptionsSliderTemplate")
-        slider:SetWidth(300)
-        slider:SetHeight(24)
-        slider:SetMinMaxValues(0, 100)
-        slider:SetValueStep(1)
-        local sliderName = slider:GetName()
-        if sliderName then
-            _G[sliderName .. "Low"]:SetText("0")
-            _G[sliderName .. "High"]:SetText("100")
-        end
-        noveltySlider = slider
-    end
-    slider:ClearAllPoints()
-    slider:SetPoint("TOP", contentArea, "TOP", 0, -110)
-    slider:SetValue(state.noveltyValue or 30)
-    slider:Show()
-
-    local valLabel = CachedFontString("s2.value", "GameFontHighlightLarge")
-    valLabel:SetPoint("TOP", slider, "BOTTOM", 0, -10)
-    valLabel:SetText(tostring(state.noveltyValue or 30))
-    noveltyValueLabel = valLabel
-
-    local hint = CachedFontString("s2.hint", "GameFontDisableSmall")
-    hint:SetPoint("TOP", valLabel, "BOTTOM", 0, -8)
-    hint:SetText(L.WIZARD_S2_HINT)
-
-    slider:SetScript("OnValueChanged", function(self, v)
-        v = math.floor(v)
-        state.noveltyValue = v
-        noveltyValueLabel:SetText(tostring(v))
-    end)
+local function BuildStep1()
+    local pane = Pane(1)
+    pane._slots = {}
+    W.Gap(pane, 1, 20)
+    Track(pane, Line(pane, {
+        size = "medium",
+        text = function() return string.format(L.WIZARD_S1_TITLE, EbonBuilds.Build.LOCKED_SLOTS) end,
+    }))
+    W.Gap(pane, 1, 50)
+    local slots = EbonBuilds.Build.LOCKED_SLOTS
+    local centered = W.Centered(pane, Width(), slots * SLOT_SIZE + (slots - 1) * SLOT_SPACING)
+    pane._slotRow = centered:Add("bar", { spacing = SLOT_SPACING })
 end
 
-local familyCycleLabels = { [0] = L.WIZARD_FAMILY_NONE, [10] = L.WIZARD_FAMILY_SECONDARY, [20] = L.WIZARD_FAMILY_PRIMARY }
-local familyCycleValues = { 0, 10, 20 }
-
-local function FamilyNextValue(current)
-    for i, v in ipairs(familyCycleValues) do
-        if v == current then
-            local nextIdx = i + 1
-            if nextIdx > #familyCycleValues then nextIdx = 1 end
-            return familyCycleValues[nextIdx]
+local function RenderStep1()
+    local pane = panes[1]
+    local slots = EbonBuilds.Build.LOCKED_SLOTS
+    for i = 1, math.max(slots, #pane._slots) do
+        local btn = LockedSlot(pane, i)
+        if i <= slots then
+            btn:Show()
+            RefreshLockedSlot(btn)
+        else
+            btn:Hide()
         end
     end
-    return 0
+    pane._slotRow:Layout()
 end
 
-local function FamilyPrevValue(current)
-    for i, v in ipairs(familyCycleValues) do
-        if v == current then
-            local prevIdx = i - 1
-            if prevIdx < 1 then prevIdx = #familyCycleValues end
-            return familyCycleValues[prevIdx]
-        end
-    end
-    return 0
+local function BuildStep2()
+    local pane = Pane(2)
+    W.Gap(pane, 1, 30)
+    Track(pane, Line(pane, { key = "WIZARD_S2_TITLE", size = "medium" }))
+    W.Gap(pane, 1, 6)
+    Track(pane, Line(pane, { key = "WIZARD_S2_DESC" }, "status"))
+    W.Gap(pane, 1, 24)
+    Track(pane, W.Kit("range", W.Centered(pane, Width(), 300), {
+        width = 300, min = 0, max = 100, step = 1,
+        get = function() return state.noveltyValue or 30 end,
+        onChange = function(_, v) state.noveltyValue = math.floor(v) end,
+    }))
+    W.Gap(pane, 1, 8)
+    Track(pane, Line(pane, { key = "WIZARD_S2_HINT" }, "status"))
 end
 
-local function RenderFamilyRow(rowIndex, familyEntry, anchorY)
-    local key = "s3.row" .. rowIndex
-    local rowW = 360
-    local row = CachedFrame(key, "Frame")
-    row:SetPoint("TOP", contentArea, "TOP", 0, anchorY)
-    row:SetWidth(rowW)
-    row:SetHeight(26)
-
-    local label = CachedFontString(key .. ".label", "GameFontNormal", row)
-    label:SetPoint("TOPLEFT", row, "TOPLEFT", 0, -2)
-    label:SetWidth(130)
-    label:SetJustifyH("RIGHT")
-    label:SetText(familyEntry.label)
-
-    local famKey = familyEntry.key
-    local currentVal = state.familyPriorities[famKey] or 0
-
-    local btn = CachedFrame(key .. ".btn", "Button", "UIPanelButtonTemplate", row)
-    btn:SetWidth(100)
-    btn:SetHeight(22)
-    btn:SetPoint("LEFT", label, "RIGHT", 32, 0)
-    btn:SetText(familyCycleLabels[currentVal])
-
-    local function RefreshBtn()
-        btn:SetText(familyCycleLabels[state.familyPriorities[famKey] or 0])
-    end
-
-    local leftArrow = CachedFrame(key .. ".left", "Button", nil, row)
-    leftArrow:SetWidth(18)
-    leftArrow:SetHeight(18)
-    leftArrow:SetPoint("RIGHT", btn, "LEFT", -8, 0)
-    leftArrow:SetNormalFontObject("GameFontNormal")
-    leftArrow:SetText("<")
-    leftArrow:SetScript("OnClick", function()
-        state.familyPriorities[famKey] = FamilyPrevValue(state.familyPriorities[famKey] or 0)
-        RefreshBtn()
-    end)
-
-    local rightArrow = CachedFrame(key .. ".right", "Button", nil, row)
-    rightArrow:SetWidth(18)
-    rightArrow:SetHeight(18)
-    rightArrow:SetPoint("LEFT", btn, "RIGHT", 8, 0)
-    rightArrow:SetNormalFontObject("GameFontNormal")
-    rightArrow:SetText(">")
-    rightArrow:SetScript("OnClick", function()
-        state.familyPriorities[famKey] = FamilyNextValue(state.familyPriorities[famKey] or 0)
-        RefreshBtn()
-    end)
-
-    btn:SetScript("OnClick", function()
-        state.familyPriorities[famKey] = FamilyNextValue(state.familyPriorities[famKey] or 0)
-        RefreshBtn()
-    end)
-
-    return row
+local function CycleRow(pane, labelText, valueText, onStep)
+    local row = W.Centered(pane, Width(), CYCLE_ROW_W):Add("bar", { spacing = 8 })
+    local label = Track(pane, row:Add("text", { size = "medium", width = ROW_LABEL_W, text = labelText }))
+    label.text:SetJustifyH("RIGHT")
+    local value
+    Track(pane, W.Kit("button", row, {
+        text = "<",
+        onClick = function() onStep(-1); value:Refresh() end,
+    }))
+    value = Track(pane, W.Kit("button", row, {
+        width = CYCLE_W, text = valueText,
+        onClick = function(self) onStep(1); self:Refresh() end,
+    }))
+    Track(pane, W.Kit("button", row, {
+        text = ">",
+        onClick = function() onStep(1); value:Refresh() end,
+    }))
+    W.Gap(pane, 1, 4)
 end
 
-local function RenderStep3()
-    ClearContent()
-
-    local title = CachedFontString("s3.title", "GameFontHighlight")
-    title:SetPoint("TOP", contentArea, "TOP", 0, -20)
-    title:SetText(L.WIZARD_S3_TITLE)
-
-    local desc = CachedFontString("s3.desc", "GameFontDisableSmall")
-    desc:SetPoint("TOP", contentArea, "TOP", 0, -42)
-    desc:SetText(L.WIZARD_DEFAULTS_HINT)
-
-    for i, entry in ipairs(FAMILIES) do
-        RenderFamilyRow(i, entry, -72 - (i - 1) * 30)
+local function BuildStep3()
+    local pane = Pane(3)
+    W.Gap(pane, 1, 20)
+    Track(pane, Line(pane, { key = "WIZARD_S3_TITLE", size = "medium" }))
+    W.Gap(pane, 1, 6)
+    Track(pane, Line(pane, { key = "WIZARD_DEFAULTS_HINT" }, "status"))
+    W.Gap(pane, 1, 12)
+    for _, fam in ipairs(FAMILY_KEYS) do
+        local family = fam
+        CycleRow(pane,
+            function() return L.FAMILY_LONG[family] end,
+            function() return L[FAMILY_CYCLE_KEYS[state.familyPriorities[family] or 0]] end,
+            function(step)
+                state.familyPriorities[family] = Cycle(familyCycleValues, state.familyPriorities[family] or 0, step)
+            end)
     end
 end
 
-local qualityValues = { 0, 5, 10, 15, 20, 25, 30, 35, 40 }
-
-local function NextQualityValue(current)
-    for i, v in ipairs(qualityValues) do
-        if v == current then
-            local nextIdx = i + 1
-            if nextIdx > #qualityValues then nextIdx = 1 end
-            return qualityValues[nextIdx]
-        end
+local function BuildStep4()
+    local pane = Pane(4)
+    W.Gap(pane, 1, 20)
+    Track(pane, Line(pane, { key = "WIZARD_S4_TITLE", size = "medium" }))
+    W.Gap(pane, 1, 6)
+    Track(pane, Line(pane, { key = "WIZARD_DEFAULTS_HINT" }, "status"))
+    W.Gap(pane, 1, 12)
+    for _, q in ipairs({ 0, 1, 2, 3, 4 }) do
+        local quality = q
+        CycleRow(pane,
+            function() return "|cff" .. (QUALITY_COLOR[quality] or "ffffff") .. QUALITY_LABELS[quality] .. "|r" end,
+            function() return "+" .. tostring(state.qualityBonus[quality]) end,
+            function(step)
+                state.qualityBonus[quality] = Cycle(qualityValues, state.qualityBonus[quality], step)
+            end)
     end
-    return 0
-end
-
-local function PrevQualityValue(current)
-    for i, v in ipairs(qualityValues) do
-        if v == current then
-            local prevIdx = i - 1
-            if prevIdx < 1 then prevIdx = #qualityValues end
-            return qualityValues[prevIdx]
-        end
-    end
-    return 0
-end
-
-local function RenderQualityRow(q, anchorY)
-    local key = "s4.row" .. q
-    local row = CachedFrame(key, "Frame")
-    row:SetPoint("TOP", contentArea, "TOP", 0, anchorY)
-    row:SetWidth(360)
-    row:SetHeight(28)
-
-    local colorHex = QUALITY_COLOR[q] or "ffffff"
-    local label = CachedFontString(key .. ".label", "GameFontNormal", row)
-    label:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    label:SetWidth(130)
-    label:SetJustifyH("RIGHT")
-    label:SetText("|cff" .. colorHex .. QUALITY_LABELS[q] .. "|r")
-
-    local currentVal = state.qualityBonus[q]
-    if currentVal == nil then currentVal = q * 10 end
-    state.qualityBonus[q] = currentVal
-
-    local btn = CachedFrame(key .. ".btn", "Button", "UIPanelButtonTemplate", row)
-    btn:SetWidth(100)
-    btn:SetHeight(22)
-    btn:SetPoint("LEFT", label, "RIGHT", 32, 0)
-    btn:SetText("+" .. tostring(currentVal))
-
-    local function RefreshBtn()
-        btn:SetText("+" .. tostring(state.qualityBonus[q]))
-    end
-
-    local leftArrow = CachedFrame(key .. ".left", "Button", nil, row)
-    leftArrow:SetWidth(18)
-    leftArrow:SetHeight(18)
-    leftArrow:SetPoint("RIGHT", btn, "LEFT", -8, 0)
-    leftArrow:SetNormalFontObject("GameFontNormal")
-    leftArrow:SetText("<")
-    leftArrow:SetScript("OnClick", function()
-        state.qualityBonus[q] = PrevQualityValue(state.qualityBonus[q])
-        RefreshBtn()
-    end)
-
-    local rightArrow = CachedFrame(key .. ".right", "Button", nil, row)
-    rightArrow:SetWidth(18)
-    rightArrow:SetHeight(18)
-    rightArrow:SetPoint("LEFT", btn, "RIGHT", 8, 0)
-    rightArrow:SetNormalFontObject("GameFontNormal")
-    rightArrow:SetText(">")
-    rightArrow:SetScript("OnClick", function()
-        state.qualityBonus[q] = NextQualityValue(state.qualityBonus[q])
-        RefreshBtn()
-    end)
-
-    btn:SetScript("OnClick", function()
-        state.qualityBonus[q] = NextQualityValue(state.qualityBonus[q])
-        RefreshBtn()
-    end)
 end
 
 local function RenderStep4()
-    ClearContent()
-
-    local title = CachedFontString("s4.title", "GameFontHighlight")
-    title:SetPoint("TOP", contentArea, "TOP", 0, -20)
-    title:SetText(L.WIZARD_S4_TITLE)
-
-    local desc = CachedFontString("s4.desc", "GameFontDisableSmall")
-    desc:SetPoint("TOP", contentArea, "TOP", 0, -42)
-    desc:SetText(L.WIZARD_DEFAULTS_HINT)
-
-    for i, q in ipairs({ 0, 1, 2, 3, 4 }) do
-        RenderQualityRow(q, -72 - (i - 1) * 32)
+    for q = 0, 4 do
+        if state.qualityBonus[q] == nil then state.qualityBonus[q] = q * 10 end
     end
 end
 
-local echoRows = {}
-local echoScrollFrame, echoScrollBar, echoScrollChild
+local RenderStep5
 
-local function RenderEchoRow(parent, entry, index, y)
-    local key = "s5.row" .. index
-    local row = CachedFrame(key, "Frame", nil, parent)
-    row:SetPoint("TOPLEFT", parent, "TOPLEFT", 6, y)
-    row:SetPoint("RIGHT",   parent, "RIGHT",   -6, 0)
-    row:SetHeight(28)
+local function EchoRow(pane, index)
+    local rows = pane._rows
+    if rows[index] then return rows[index] end
 
-    local icon = row._icon
-    if not icon then
-        icon = row:CreateTexture(nil, "ARTWORK")
-        icon:SetWidth(22)
-        icon:SetHeight(22)
-        icon:SetPoint("LEFT", row, "LEFT", 2, 0)
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        row._icon = icon
-    end
-    icon:SetTexture(select(3, GetSpellInfo(entry.spellId)))
-    icon:Show()
-
-    local color = QUALITY_COLOR[entry.quality] or "ffffff"
-    local nameLabel = CachedFontString(key .. ".name", "GameFontNormalSmall", row)
-    nameLabel:SetPoint("LEFT",  icon, "RIGHT", 4, 0)
-    nameLabel:SetWidth(140)
-    nameLabel:SetJustifyH("LEFT")
-    nameLabel:SetText("|cff" .. color .. entry.name .. "|r")
-
-    local btns = {}
-    local currentVal = state.echoes[entry.name] and state.echoes[entry.name].weight or 40
-    local btnStartX = 170
-
+    local row = pane._list:Add("bar", {})
+    row:Add("icon", {
+        size = ECHO_ICON,
+        icon = function() return row._entry and select(3, GetSpellInfo(row._entry.spellId)) or nil end,
+    })
+    row:Add("text", {
+        width = ECHO_NAME_W,
+        text = function()
+            local entry = row._entry
+            if not entry then return "" end
+            return "|cff" .. (QUALITY_COLOR[entry.quality] or "ffffff") .. entry.name .. "|r"
+        end,
+    })
+    row._weights = {}
     for j, opt in ipairs(WEIGHT_OPTIONS) do
-        local btn = CachedFrame(key .. ".w" .. j, "Button", "UIPanelButtonTemplate", row)
-        btn:SetWidth(55)
-        btn:SetHeight(18)
-        btn:SetPoint("LEFT", row, "LEFT", btnStartX + (j - 1) * 60, -2)
-        btn:SetText(opt.label)
-        btn._val = opt.value
-
-        HighlightButton(btn, opt.value == currentVal)
-
-        btn:SetScript("OnClick", function(self)
-            state.echoes[entry.name].weight = self._val
-            for _, b in ipairs(btns) do
-                HighlightButton(b, b._val == self._val)
-            end
-        end)
-        btns[j] = btn
+        local option = opt
+        row._weights[j] = W.Kit("button", row, {
+            key = option.key,
+            onClick = function()
+                state.echoes[row._entry.name].weight = option.value
+                for k, btn in ipairs(row._weights) do
+                    btn:SetSelected(WEIGHT_OPTIONS[k].value == option.value)
+                end
+            end,
+        })
     end
-
-    local removeBtn = CachedFrame(key .. ".remove", "Button", "UIPanelButtonTemplate", row)
-    removeBtn:SetWidth(56)
-    removeBtn:SetHeight(18)
-    removeBtn:SetPoint("LEFT", row, "LEFT", btnStartX + 4 * 60 + 6, -2)
-    removeBtn:SetText(L.REMOVE)
-    removeBtn:SetScript("OnClick", function()
-        state.echoes[entry.name] = nil
-        RenderCurrentStep()
-    end)
-
-    table.insert(echoRows, row)
+    W.Kit("button", row, {
+        key = "REMOVE",
+        onClick = function()
+            state.echoes[row._entry.name] = nil
+            RenderStep5()
+        end,
+    })
+    rows[index] = row
     return row
 end
 
-local function RenderStep5()
-    ClearContent()
-    for _, row in ipairs(echoRows) do row:Hide() end
-    echoRows = {}
+local function BuildStep5()
+    local pane = Pane(5)
+    pane._rows = {}
+    W.Gap(pane, 1, 20)
+    Track(pane, Line(pane, { key = "WIZARD_S5_TITLE", size = "medium" }))
+    W.Gap(pane, 1, 6)
+    Track(pane, Line(pane, { key = "WIZARD_S5_DESC" }, "status"))
+    W.Gap(pane, 1, 8)
+    Track(pane, Button(pane, {
+        key = "ADD_ECHO_BUTTON", width = 120,
+        onClick = function()
+            EbonBuilds.EchoPicker.Show(function(spellId, quality, name)
+                state.echoes[name] = { spellId = spellId, quality = quality, name = name, weight = 40 }
+                RenderStep5()
+            end, BuildFilteredEchoList())
+        end,
+    }))
+    W.Gap(pane, 1, 8)
 
-    local title = CachedFontString("s5.title", "GameFontHighlight")
-    title:SetPoint("TOP", contentArea, "TOP", 0, -20)
-    title:SetText(L.WIZARD_S5_TITLE)
+    local rest = W.Rest(pane)
+    local holder = pane:Add("bar", { spacing = 0 })
+    W.Gap(holder, 10, 1)
+    local list = holder:Add("group", { scroll = "VERTICAL", width = Width() - 30, height = rest })
+    pane._list = list
 
-    local subtitle = CachedFontString("s5.subtitle", "GameFontDisableSmall")
-    subtitle:SetPoint("TOP", contentArea, "TOP", 0, -42)
-    subtitle:SetText(L.WIZARD_S5_DESC)
+    pane._empty = list:Add("status", { key = "WIZARD_S5_EMPTY", width = Width() - 80 })
+end
 
-    local addBtn = CachedFrame("s5.add", "Button", "UIPanelButtonTemplate")
-    addBtn:SetWidth(120)
-    addBtn:SetHeight(20)
-    addBtn:SetPoint("TOP", contentArea, "TOP", 0, -64)
-    addBtn:SetText(L.ADD_ECHO_BUTTON)
-    addBtn:SetScript("OnClick", function()
-        EbonBuilds.EchoPicker.Show(function(spellId, quality, name)
-            state.echoes[name] = { spellId = spellId, quality = quality, name = name, weight = 40 }
-            RenderStep5()
-        end, BuildFilteredEchoList())
-    end)
-
-    local sf, sb, child = echoScrollFrame, echoScrollBar, echoScrollChild
-    if not sf then
-        sf = CreateFrame("ScrollFrame", "EbonBuildsWizardEchoScroll", contentArea)
-        sf:SetPoint("TOPLEFT",     contentArea, "TOPLEFT",     10, -90)
-        sf:SetPoint("BOTTOMRIGHT", contentArea, "BOTTOMRIGHT", -20,   0)
-
-        sf:SetBackdrop({
-            bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            tile = true, tileSize = 8, edgeSize = 8,
-            insets = { left = 2, right = 2, top = 2, bottom = 2 },
-        })
-        sf:SetBackdropColor(0, 0, 0, 0.4)
-        sf:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
-
-        sb = CreateFrame("Slider", "EbonBuildsWizardEchoScrollBar", sf, "UIPanelScrollBarTemplate")
-        sb:SetPoint("TOPRIGHT",    sf, "TOPRIGHT",    -4, -20)
-        sb:SetPoint("BOTTOMRIGHT", sf, "BOTTOMRIGHT", -4,  20)
-        sb:SetOrientation("VERTICAL")
-        sb:SetValueStep(30)
-        sb:SetScript("OnValueChanged", function(self, value)
-            sf:SetVerticalScroll(value)
-        end)
-
-        child = CreateFrame("Frame", nil, sf)
-        sf:SetScrollChild(child)
-
-        echoScrollFrame, echoScrollBar, echoScrollChild = sf, sb, child
-    end
-    sf:Show()
-    sb:SetMinMaxValues(0, 0)
-    sb:SetValue(0)
-    sf:SetVerticalScroll(0)
-
+RenderStep5 = function()
+    local pane = panes[5]
     local sorted = {}
     for _, entry in pairs(state.echoes) do
         sorted[#sorted + 1] = entry
     end
     table.sort(sorted, function(a, b) return a.name < b.name end)
 
-    if #sorted == 0 then
-        local hint = CachedFontString("s5.empty", "GameFontDisableSmall")
-        hint:SetPoint("TOP", contentArea, "TOP", 0, -96)
-        hint:SetText(L.WIZARD_S5_EMPTY)
-    end
-
-    child:SetWidth(contentArea:GetWidth() - 54)
-    child:SetHeight(1)
+    if #sorted == 0 then pane._empty:Show() else pane._empty:Hide() end
 
     for i, entry in ipairs(sorted) do
-        RenderEchoRow(child, entry, i, -(i - 1) * 30)
-    end
-    child:SetHeight(math.max(1, #sorted * 30))
-
-    sf:EnableMouseWheel(true)
-    sf:SetScript("OnMouseWheel", function(self, delta)
-        local childH = child:GetHeight()
-        local sfH = self:GetHeight()
-        local range = math.max(0, childH - sfH)
-        if range <= 0 then return end
-        local newPos = self:GetVerticalScroll() - delta * 30
-        if newPos < 0 then newPos = 0
-        elseif newPos > range then newPos = range end
-        self:SetVerticalScroll(newPos)
-        sb:SetValue(newPos)
-    end)
-
-    local function UpdateRange()
-        local childH = child:GetHeight()
-        local sfH = sf:GetHeight()
-        local range = math.max(0, childH - sfH)
-        sb:SetMinMaxValues(0, range)
-        if range > 0 then
-            sb:Show()
-        else
-            sb:Hide()
+        local row = EchoRow(pane, i)
+        row._entry = entry
+        row:Show()
+        row:Refresh()
+        for k, btn in ipairs(row._weights) do
+            btn:SetSelected(WEIGHT_OPTIONS[k].value == entry.weight)
         end
     end
-    sf:SetScript("OnSizeChanged", UpdateRange)
-    UpdateRange()
+    for i = #sorted + 1, #pane._rows do pane._rows[i]:Hide() end
+    pane._list:Layout()
 end
 
-local function RenderStep6()
-    ClearContent()
+local function Indented(pane)
+    local row = pane:Add("bar", { spacing = 0 })
+    W.Gap(row, 40, 1)
+    return row
+end
 
-    local title = CachedFontString("s6.title", "GameFontHighlight")
-    title:SetPoint("TOP", contentArea, "TOP", 0, -20)
-    title:SetText(L.WIZARD_S6_TITLE)
+local function BuildStep6()
+    local pane = Pane(6)
+    W.Gap(pane, 1, 20)
+    Track(pane, Line(pane, { key = "WIZARD_S6_TITLE", size = "medium" }))
+    W.Gap(pane, 1, 6)
+    Track(pane, Line(pane, { key = "WIZARD_S6_DESC" }, "status"))
+    W.Gap(pane, 1, 16)
 
-    local desc = CachedFontString("s6.desc", "GameFontDisableSmall")
-    desc:SetPoint("TOP", contentArea, "TOP", 0, -44)
-    desc:SetText(L.WIZARD_S6_DESC)
+    local fieldWidth = Width() - 80
+    local titleBox = W.Field(Indented(pane), {
+        key = "TITLE_LABEL", width = fieldWidth,
+        get = function() return state.wizardTitle or "" end,
+    }, {
+        maxLetters = 40,
+        onText = function(text) state.wizardTitle = text end,
+    })
+    Track(pane, titleBox)
+    W.Gap(pane, 1, 8)
 
-    local titleLabel = CachedFontString("s6.titleLabel", "GameFontNormal")
-    titleLabel:SetPoint("TOPLEFT", contentArea, "TOPLEFT", 40, -80)
-    titleLabel:SetText(L.TITLE_LABEL)
-
-    local titleBox = CachedFrame("s6.titleBox", "EditBox")
-    titleBox:SetPoint("TOPLEFT", contentArea, "TOPLEFT", 40, -100)
-    titleBox:SetPoint("RIGHT", contentArea, "RIGHT", -40, 0)
-    titleBox:SetHeight(22)
-    titleBox:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
-    titleBox:SetTextColor(1, 1, 1, 1)
-    titleBox:SetAutoFocus(false)
-    titleBox:SetMaxLetters(40)
-    titleBox:SetText(state.wizardTitle or "")
-    titleBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    titleBox:SetScript("OnTextChanged", function(self)
-        state.wizardTitle = self:GetText()
-    end)
-
-    local titleBg = CachedFrame("s6.titleBg", "Frame")
-    titleBg:SetPoint("TOPLEFT",     titleBox, "TOPLEFT",     -2,  2)
-    titleBg:SetPoint("BOTTOMRIGHT", titleBox, "BOTTOMRIGHT",  2, -2)
-    EbonBuilds.Widgets.InputBackdrop(titleBg)
-    titleBg:SetFrameLevel(titleBox:GetFrameLevel() - 1)
-
-    local descLabel = CachedFontString("s6.descLabel", "GameFontNormal")
-    descLabel:SetPoint("TOPLEFT", contentArea, "TOPLEFT", 40, -140)
-    descLabel:SetText(L.DESCRIPTION_LABEL)
-
-    local descBox = CachedFrame("s6.descBox", "EditBox")
-    descBox:SetMultiLine(true)
-    descBox:SetMaxLetters(0)
-    descBox:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
-    descBox:SetPoint("TOPLEFT",     contentArea, "TOPLEFT",     40, -160)
-    descBox:SetPoint("BOTTOMRIGHT", contentArea, "BOTTOMRIGHT", -40,  16)
-    descBox:SetAutoFocus(false)
-    descBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    descBox:SetText(state.wizardDescription or "")
-
-    local descBg = CachedFrame("s6.descBg", "Frame")
-    descBg:SetPoint("TOPLEFT",     descBox, "TOPLEFT",     -2,  2)
-    descBg:SetPoint("BOTTOMRIGHT", descBox, "BOTTOMRIGHT",  2, -2)
-    EbonBuilds.Widgets.InputBackdrop(descBg)
-    descBg:SetFrameLevel(descBox:GetFrameLevel() - 1)
-
-    local placeHolder = CachedFontString("s6.placeholder", "GameFontDisable", descBox)
-    placeHolder:SetPoint("TOPLEFT",     descBox, "TOPLEFT",     2, -2)
-    placeHolder:SetPoint("BOTTOMRIGHT", descBox, "BOTTOMRIGHT", -2,  2)
-    placeHolder:SetJustifyH("LEFT")
-    placeHolder:SetJustifyV("TOP")
-    placeHolder:SetTextColor(0.5, 0.5, 0.5, 1)
-    placeHolder:SetText(L.WIZARD_S6_HINT)
-
-    descBox:SetScript("OnEditFocusGained", function() placeHolder:Hide() end)
-    descBox:SetScript("OnEditFocusLost", function(self)
-        if (self:GetText() or "") == "" then placeHolder:Show() end
-    end)
-    descBox:SetScript("OnTextChanged", function(self)
-        if self:HasFocus() then
-            placeHolder:Hide()
-        else
-            if (self:GetText() or "") == "" then placeHolder:Show() else placeHolder:Hide() end
-        end
-        state.wizardDescription = self:GetText()
-    end)
-
-    if (descBox:GetText() or "") == "" then placeHolder:Show() else placeHolder:Hide() end
+    Track(pane, W.Field(Indented(pane), {
+        key = "DESCRIPTION_LABEL", width = fieldWidth, lines = DESC_LINES,
+        get = function() return state.wizardDescription or "" end,
+    }, {
+        onText = function(text) state.wizardDescription = text end,
+        placeholder = "WIZARD_S6_HINT",
+    }))
 end
 
 local function CreateBuildFromWizard()
@@ -715,10 +464,10 @@ local function CreateBuildFromWizard()
         settings.qualityBonus[q] = state.qualityBonus[q] or (q * 10)
     end
 
-    for _, entry in ipairs(FAMILIES) do
-        local val = state.familyPriorities[entry.key] or 0
+    for _, family in ipairs(FAMILY_KEYS) do
+        local val = state.familyPriorities[family] or 0
         if val > 0 then
-            settings.familyBonus[entry.key] = val
+            settings.familyBonus[family] = val
         end
     end
 
@@ -739,52 +488,10 @@ local function CreateBuildFromWizard()
         comments     = state.wizardDescription or "",
         lockedEchoes = locked,
         settings     = settings,
-        isPublic     = false,
     }
     EbonBuilds.Draft.isEditing = true
 
     EbonBuilds.ViewRouter.Show("buildTabs", { mode = "create", fromWizard = true })
-end
-
-local function RenderStep0()
-    ClearContent()
-    local y = -20
-
-    local title = CachedFontString("s0.title", "GameFontHighlight")
-    title:SetPoint("TOP", contentArea, "TOP", 0, y)
-    title:SetText(L.WIZARD_S0_TITLE)
-
-    y = y - 20
-    local subtitle = CachedFontString("s0.subtitle", "GameFontDisableSmall")
-    subtitle:SetPoint("TOP", contentArea, "TOP", 0, y)
-    subtitle:SetText(L.WIZARD_S0_DESC)
-
-    local wizardBtn = CachedFrame("s0.wizardBtn", "Button", "UIPanelButtonTemplate")
-    wizardBtn:SetWidth(200)
-    wizardBtn:SetHeight(40)
-    wizardBtn:SetPoint("TOP", contentArea, "TOP", 0, y - 30)
-    wizardBtn:SetText(L.WIZARD_MODE)
-    wizardBtn:SetScript("OnClick", function()
-        state.step = 1
-        RenderCurrentStep()
-    end)
-
-    local wizardDesc = CachedFontString("s0.wizardDesc", "GameFontDisableSmall")
-    wizardDesc:SetPoint("TOP", wizardBtn, "BOTTOM", 0, -2)
-    wizardDesc:SetText(L.WIZARD_MODE_DESC)
-
-    local proBtn = CachedFrame("s0.proBtn", "Button", "UIPanelButtonTemplate")
-    proBtn:SetWidth(200)
-    proBtn:SetHeight(40)
-    proBtn:SetPoint("TOP", wizardDesc, "BOTTOM", 0, -18)
-    proBtn:SetText(L.PRO_MODE)
-    proBtn:SetScript("OnClick", function()
-        EbonBuilds.ViewRouter.Show("buildTabs", { mode = "create" })
-    end)
-
-    local proDesc = CachedFontString("s0.proDesc", "GameFontDisableSmall")
-    proDesc:SetPoint("TOP", proBtn, "BOTTOM", 0, -2)
-    proDesc:SetText(L.PRO_MODE_DESC)
 end
 
 local function GoNext()
@@ -819,87 +526,96 @@ local function GoBack()
 end
 
 RenderCurrentStep = function()
-    ClearContent()
-    if state.step == 0 then
-        stepLabel:SetText("")
+    local step = state.step
+    stepLabel:Refresh()
+    backBtn:Refresh()
+    nextBtn:Refresh()
+    if step == 0 then
         backBtn:Hide()
         nextBtn:Hide()
-        RenderStep0()
-        return
+    else
+        backBtn:Show()
+        nextBtn:Show()
     end
-    backBtn:Show()
-    nextBtn:Show()
-    UpdateNavButtons()
-    if state.step == 1 then
+    backBtn.kitHost:Layout()
+    if step == 1 then
         RenderStep1()
-    elseif state.step == 2 then
-        RenderStep2()
-    elseif state.step == 3 then
-        RenderStep3()
-    elseif state.step == 4 then
+    elseif step == 4 then
         RenderStep4()
-    elseif state.step == 5 then
+    end
+    ShowPane(step)
+    if step == 5 then
         RenderStep5()
-    elseif state.step == 6 then
-        RenderStep6()
     end
 end
 
 local view = {}
 
+local BuildViewFrame
+
 function view.Show(container, context)
-    EbonBuilds.Widgets.Attach(viewFrame, container)
-
-    state.step = 0
-    state.locked = { nil, nil, nil, nil, nil }
-    state.noveltyValue = 30
-    state.qualityBonus = { [0] = 0, [1] = 10, [2] = 20, [3] = 30, [4] = 40 }
-    state.familyPriorities = {}
-    state.echoes = {}
-    state.wizardTitle = ""
-    state.wizardDescription = ""
-
+    viewFrame = viewFrame or BuildViewFrame(container)
+    ResetState()
+    W.ShowPage(viewFrame)
     RenderCurrentStep()
-    viewFrame:Show()
 end
 
 function view.Hide()
     if viewFrame then viewFrame:Hide() end
 end
 
-local function BuildViewFrame()
-    local f = CreateFrame("Frame", nil, UIParent)
+BuildViewFrame = function(container)
+    local f = W.Page(container, { spacing = 0 })
+    local width = Width()
 
-    local header = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    header:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -10)
-    header:SetText(L.WIZARD_HEADER)
+    W.Gap(f, 1, TOP_GAP)
+    local top = f:Add("bar", { spacing = 0 })
+    W.Gap(top, 10, 1)
+    top:Add("text", { key = "WIZARD_HEADER", size = "medium", width = width / 2 - STEP_W / 2 - 10 })
+    stepLabel = top:Add("text", {
+        size = "medium", width = STEP_W,
+        text = function()
+            if (state.step or 0) <= 0 then return "" end
+            return string.format(L.WIZARD_STEP, DisplayedStep(), TotalSteps())
+        end,
+    })
+    stepLabel.text:SetJustifyH("CENTER")
+    local lead = W.Gap(f, 1, 1)
 
-    stepLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    stepLabel:SetPoint("TOP", f, "TOP", 0, -10)
+    contentArea = f:Add("bar", { layout = "VERTICAL", spacing = 0, width = width, height = 1 })
 
-    contentArea = CreateFrame("Frame", nil, f)
-    contentArea:SetPoint("TOPLEFT",     f, "TOPLEFT",     0, -40)
-    contentArea:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0,  50)
+    local drop = W.Gap(f, 1, 1)
+    local bottom = f:Add("bar", { spacing = 10 })
+    W.Gap(bottom, 0, 1)
+    backBtn = W.Kit("button", bottom, {
+        key = "BACK", width = NAV_W,
+        disabled = function() return (state.step or 0) <= 0 end,
+        onClick = GoBack,
+    })
+    nextBtn = W.Kit("button", bottom, {
+        minWidth = NAV_W,
+        text = function() return (state.step or 0) >= 6 and L.CREATE_BUILD or L.NEXT end,
+        onClick = GoNext,
+    })
 
-    backBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    backBtn:SetWidth(80)
-    backBtn:SetHeight(22)
-    backBtn:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 10, 20)
-    backBtn:SetText(L.BACK)
-    backBtn:SetScript("OnClick", GoBack)
+    lead.spec.height = math.max(1, CONTENT_TOP - TOP_GAP - top:GetHeight())
+    lead:SetHeight(lead.spec.height)
+    drop.spec.height = math.max(1, FOOTER - FOOTER_BOTTOM - backBtn:GetHeight())
+    drop:SetHeight(drop.spec.height)
+    contentArea.spec.height = f.spec.height - CONTENT_TOP - FOOTER
+    contentArea:SetHeight(contentArea.spec.height)
+    f:Layout()
 
-    nextBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    nextBtn:SetWidth(80)
-    nextBtn:SetHeight(22)
-    nextBtn:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 100, 20)
-    nextBtn:SetText(L.NEXT)
-    nextBtn:SetScript("OnClick", GoNext)
-
-    f:Hide()
+    BuildStep0()
+    BuildStep1()
+    BuildStep2()
+    BuildStep3()
+    BuildStep4()
+    BuildStep5()
+    BuildStep6()
     return f
 end
 
 function EbonBuilds.BuildWizard.Init()
-    viewFrame = BuildViewFrame()
     EbonBuilds.ViewRouter.Register("buildWizard", view)
 end

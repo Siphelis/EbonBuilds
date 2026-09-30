@@ -1,54 +1,41 @@
 EbonBuilds.WelcomeView = {}
 
-local L = EbonBuilds.L
+local W = EbonBuilds.Widgets
 
-local viewFrame
+local ICON          = "Interface\\Icons\\INV_Misc_Book_09"
+local ICON_SIZE     = 64
+local BUTTON_WIDTH  = 140
+local BUTTON_HEIGHT = 28
+local TOP           = 120
 
-local function BuildViewFrame(parent)
-    local f = CreateFrame("Frame", nil, parent)
+local page
 
-    local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetWidth(64)
-    icon:SetHeight(64)
-    icon:SetPoint("TOP", f, "TOP", 0, -120)
-    icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
-
-    local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    title:SetPoint("TOP", icon, "BOTTOM", 0, -16)
-    title:SetText(L.WELCOME_TITLE)
-
-    local sub = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    sub:SetPoint("TOP", title, "BOTTOM", 0, -8)
-    sub:SetText(L.WELCOME_BODY)
-
-    local newBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    newBtn:SetWidth(140)
-    newBtn:SetHeight(28)
-    newBtn:SetPoint("TOP", sub, "BOTTOM", 0, -24)
-    newBtn:SetText(L.NEW_BUILD_BUTTON)
-    newBtn:SetScript("OnClick", function()
-        EbonBuilds.ViewRouter.Show("buildWizard")
-    end)
-
-    local publicBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    publicBtn:SetWidth(140)
-    publicBtn:SetHeight(28)
-    publicBtn:SetPoint("TOP", newBtn, "BOTTOM", 0, -8)
-    publicBtn:SetText(L.PUBLIC_BUILDS)
-    publicBtn:SetScript("OnClick", function()
-        EbonBuilds.ViewRouter.Show("publicBuilds")
-    end)
-
-    return f
+local function Build(container)
+    local width = EbonBuilds.MainWindow.VIEW_WIDTH
+    page = W.Page(container, { spacing = 0 })
+    W.Gap(page, width, TOP)
+    W.Centered(page, width, ICON_SIZE):Add("icon", { icon = ICON, size = ICON_SIZE })
+    W.Gap(page, width, 16)
+    page:Add("text", { key = "WELCOME_TITLE", size = "large", width = width }).text:SetJustifyH("CENTER")
+    W.Gap(page, width, 8)
+    page:Add("text", { key = "WELCOME_BODY", size = "medium", width = width }).text:SetJustifyH("CENTER")
+    W.Gap(page, width, 24)
+    W.Kit("button", W.Centered(page, width, BUTTON_WIDTH), {
+        key = "NEW_BUILD_BUTTON", width = BUTTON_WIDTH, height = BUTTON_HEIGHT,
+        onClick = function() EbonBuilds.ViewRouter.Show("buildWizard") end,
+    })
+    W.Gap(page, width, 8)
+    W.Kit("button", W.Centered(page, width, BUTTON_WIDTH), {
+        key = "PLAYER_BUILDS", width = BUTTON_WIDTH, height = BUTTON_HEIGHT,
+        onClick = function() EbonBuilds.ViewRouter.Show("publicBuilds") end,
+    })
 end
 
 function EbonBuilds.WelcomeView.Mount(container)
-    viewFrame = viewFrame or BuildViewFrame(container)
-    EbonBuilds.Widgets.Attach(viewFrame, container)
-    viewFrame:Show()
+    if not page then Build(container) end
+    W.ShowPage(page)
 end
 
 function EbonBuilds.WelcomeView.Unmount()
-    if not viewFrame then return end
-    viewFrame:Hide()
+    if page then page:Hide() end
 end

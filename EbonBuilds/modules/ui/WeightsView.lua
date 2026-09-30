@@ -2,26 +2,29 @@ EbonBuilds.WeightsView = {}
 
 local L = EbonBuilds.L
 
+local W = EbonBuilds.Widgets
+local PADDING = 10
+local GAP     = 4
+
 local viewFrame
 
-local function BuildViewFrame(parent)
-    local f = CreateFrame("Frame", nil, parent)
+local function HeaderText()
+    local build = EbonBuilds.Build.GetActive()
+    if build then
+        return string.format(L.ECHO_WEIGHTS_FOR, build.title or "")
+    end
+    return L.ECHO_WEIGHTS
+end
 
-    local header = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    header:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -10)
-    header:SetText(L.ECHO_WEIGHTS)
-    f._header = header
+local function BuildViewFrame(container)
+    local f = W.Page(container, { padding = PADDING, spacing = GAP })
+    f._header = f:Add("text", { size = "medium", width = f.spec.width - PADDING * 2, text = HeaderText })
     return f
 end
 
 local function RefreshHeader()
     if not viewFrame then return end
-    local build = EbonBuilds.Build.GetActive()
-    if build then
-        viewFrame._header:SetText(string.format(L.ECHO_WEIGHTS_FOR, build.title or ""))
-    else
-        viewFrame._header:SetText(L.ECHO_WEIGHTS)
-    end
+    viewFrame._header:Refresh()
 end
 
 function EbonBuilds.WeightsView.Mount(container)
@@ -30,9 +33,8 @@ function EbonBuilds.WeightsView.Mount(container)
         EbonBuilds.Filters.Init(viewFrame)
         EbonBuilds.EchoTable.Init(viewFrame)
     end
-    EbonBuilds.Widgets.Attach(viewFrame, container)
     RefreshHeader()
-    viewFrame:Show()
+    W.ShowPage(viewFrame)
     EbonBuilds.Filters.FocusSearch()
 end
 

@@ -1,14 +1,26 @@
 EbonBuilds.EchoTableRows = {}
 
-local COL_ICON   = 40
+local W = EbonBuilds.Widgets
+
 local COL_WEIGHT = 80
 local COL_SCORE  = 140
 local ROW_HEIGHT = 36
+local ROW_PAD    = 4
+local ROW_INNER  = ROW_HEIGHT - ROW_PAD * 2
+local ICON_SIZE  = 28
+local ICON_LEAD  = 2
+local NAME_LEAD  = 2
+local NAME_ROOM  = COL_WEIGHT + COL_SCORE + 24
+local SCORE_ROOM = COL_WEIGHT + 16
+local BOX_W      = 58
+local BOX_H      = 22
+local EDIT_W     = 52
+local EDIT_H     = 18
+local EDIT_RIGHT = 8
 
 local QUALITY_COLORS = EbonBuilds.Const.QUALITY_HEX
 
 local function UpdateScores(row, entry)
-    if not row.scoreLabel then return end
     local weight = EbonBuilds.Weights.Get(entry.name) or 0
     local form = EbonBuilds.BuildForm
     local settings = form.GetEditingSettings()
@@ -26,46 +38,13 @@ local function UpdateScores(row, entry)
             end
         end
     end
-    row.scoreLabel:SetText(table.concat(parts, " - "))
+    row._scoreText = table.concat(parts, " - ")
+    row.scoreLabel:Refresh()
 end
 
-local function CreateIconFrame(row)
-    local frame = CreateFrame("Frame", nil, row)
-    frame:SetWidth(COL_ICON)
-    frame:SetHeight(ROW_HEIGHT)
-    frame:SetPoint("LEFT", row, "LEFT", 4, 0)
-    frame:EnableMouse(true)
-    frame.spellId = 0
-
-    local tex = frame:CreateTexture(nil, "ARTWORK")
-    tex:SetWidth(28)
-    tex:SetHeight(28)
-    tex:SetPoint("CENTER", frame, "CENTER")
-    tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    frame.icon = tex
-    return frame
+local function IconSpell(self)
+    return self.spellId
 end
-
-local function WireIconTooltip(iconFrame)
-    iconFrame:SetScript("OnEnter", function(self)
-        if not self.spellId then return end
-        local spellName = GetSpellInfo(self.spellId)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:ClearLines()
-        if spellName then
-            GameTooltip:AddLine(spellName, 1, 0.82, 0)
-        end
-        if utils and utils.GetSpellDescription then
-            local description = utils.GetSpellDescription(self.spellId, 500, 1)
-            if description and description ~= "" then
-                GameTooltip:AddLine(description, 1, 1, 1, true)
-            end
-        end
-        GameTooltip:Show()
-    end)
-    iconFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
-end
-EbonBuilds.EchoTableRows.WireIconTooltip = WireIconTooltip
 
 local function ApplyWeight(editBox, raw)
     local num = tonumber(raw)
@@ -73,22 +52,12 @@ local function ApplyWeight(editBox, raw)
         EbonBuilds.Weights.Set(editBox.echoName, num)
     end
     editBox:SetText(tostring(EbonBuilds.Weights.Get(editBox.echoName)))
-    if editBox._row and editBox._row.scoreLabel then
-        local row = editBox._row
-        local entry = { name = editBox.echoName, qualities = row._qualities, families = row._families, spellIds = row._spellIds }
-        UpdateScores(row, entry)
-    end
+    local row = editBox._row
+    UpdateScores(row, { name = editBox.echoName, qualities = row._qualities, families = row._families, spellIds = row._spellIds })
 end
 
 local function WireWeightBox(editBox)
-    editBox:SetScript("OnChar", function(self, char)
-        if not char:match("%d") then
-            local pos  = self:GetCursorPosition()
-            local text = self:GetText()
-            self:SetText(text:sub(1, pos - 1) .. text:sub(pos + 1))
-            self:SetCursorPosition(pos - 1)
-        end
-    end)
+    W.Digits(editBox)
     editBox:SetScript("OnEnterPressed", function(self)
         ApplyWeight(self, self:GetText())
     end)
@@ -98,21 +67,25 @@ local function WireWeightBox(editBox)
     editBox:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
 end
 
-local function CreateWeightBox(parentRow)
-    local editContainer = CreateFrame("Frame", nil, parentRow)
-    editContainer:SetSize(58, 22)
-    editContainer:SetPoint("RIGHT", parentRow, "RIGHT", -8, 0)
-    EbonBuilds.Widgets.InputBackdrop(editContainer)
+local function Centre(column, element)
+    W.Lead(column, (ROW_INNER - element:GetHeight()) / 2)
+    return element
+end
 
-    local box = CreateFrame("EditBox", nil, editContainer)
-    box:SetSize(52, 18)
-    box:SetPoint("CENTER", editContainer, "CENTER", 0, 0)
+local function CreateWeightBox(row)
+    local column = W.Column(row, BOX_W)
+    local holder = Centre(column, column:Add("bar", { width = BOX_W, height = BOX_H }))
+    W.InputBackdrop(holder)
+
+    local box = CreateFrame("EditBox", nil, holder)
+    box:SetSize(EDIT_W, EDIT_H)
+    box:SetPoint("CENTER", holder, "CENTER", 0, 0)
     box:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
     box:SetTextColor(1, 1, 1, 1)
     box:SetJustifyH("CENTER")
     box:SetAutoFocus(false)
     box:SetMaxLetters(6)
-    box._row = parentRow
+    box._row = row
     WireWeightBox(box)
     return box
 end
@@ -124,30 +97,34 @@ local function AddBackground(row, index)
 end
 
 function EbonBuilds.EchoTableRows.CreateRow(parent, index)
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetHeight(ROW_HEIGHT)
-    row:SetPoint("LEFT",  parent, "LEFT",  0, 0)
-    row:SetPoint("RIGHT", parent, "RIGHT", 0, 0)
-
+    local width = parent.spec.width
+    local row = parent:Add("bar", { spacing = 4, padding = ROW_PAD, width = width, height = ROW_HEIGHT })
     AddBackground(row, index)
 
-    local iconFrame = CreateIconFrame(row)
-    WireIconTooltip(iconFrame)
+    W.Gap(row, ICON_LEAD, 1)
+    local iconFrame = row:Add("icon", {
+        size = ICON_SIZE,
+        icon = function(self) return self.spellId and select(3, GetSpellInfo(self.spellId)) end,
+    })
+    W.SpellTip(iconFrame, IconSpell, { describe = true })
+    W.Gap(row, NAME_LEAD, 1)
 
-    local nameLabel = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    nameLabel:SetPoint("LEFT",  iconFrame, "RIGHT", 4, 0)
-    nameLabel:SetPoint("RIGHT", row,       "RIGHT", -(COL_WEIGHT + COL_SCORE + 24), 0)
-    nameLabel:SetJustifyH("LEFT")
+    local nameStart = ROW_PAD + ICON_LEAD + 4 + ICON_SIZE + 4 + NAME_LEAD + 4
+    local nameWidth = width - NAME_ROOM - nameStart
+    local nameColumn = W.Column(row, nameWidth)
+    Centre(nameColumn, nameColumn:Add("text", { size = "medium", width = nameWidth, text = function() return row._nameText end }))
 
-    local scoreLabel = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    scoreLabel:SetPoint("RIGHT", row, "RIGHT", -(COL_WEIGHT + 16), 0)
-    scoreLabel:SetWidth(COL_SCORE)
-    scoreLabel:SetJustifyH("RIGHT")
+    W.Gap(row, 0, 1)
+    local scoreColumn = W.Column(row, COL_SCORE)
+    local scoreLabel = Centre(scoreColumn, scoreColumn:Add("text", { width = COL_SCORE, text = function() return row._scoreText end }))
+    scoreLabel.text:SetJustifyH("RIGHT")
 
+    local boxStart = width - EDIT_RIGHT - BOX_W
+    local scoreEnd = width - SCORE_ROOM
+    W.Gap(row, math.max(0, boxStart - scoreEnd - 8), 1)
     local weightBox = CreateWeightBox(row)
 
     row.iconFrame  = iconFrame
-    row.nameLabel  = nameLabel
     row.scoreLabel = scoreLabel
     row.weightBox  = weightBox
     row:Hide()
@@ -155,15 +132,16 @@ function EbonBuilds.EchoTableRows.CreateRow(parent, index)
 end
 
 function EbonBuilds.EchoTableRows.Populate(row, yOffset, entry)
-    row:SetPoint("TOP", row:GetParent(), "TOP", 0, yOffset)
+    row:ClearAllPoints()
+    row:SetPoint("TOPLEFT", row:GetParent(), "TOPLEFT", 0, yOffset)
     row.iconFrame.spellId = entry.spellId
-    row.iconFrame.icon:SetTexture(select(3, GetSpellInfo(entry.spellId)))
-    row.nameLabel:SetText(entry.name)
+    row._nameText = entry.name
     row.weightBox.echoName = entry.name
     row.weightBox:SetText(tostring(EbonBuilds.Weights.Get(entry.name)))
     row._qualities = entry.qualities
     row._families  = entry.families
     row._spellIds  = entry.spellIds
-    UpdateScores(row, entry)
     row:Show()
+    row:Refresh()
+    UpdateScores(row, entry)
 end

@@ -1,48 +1,38 @@
 EbonBuilds.BuildOverview = {}
 
 local L = EbonBuilds.L
+local W = EbonBuilds.Widgets
 
-local CLASS_COLORS = EbonBuilds.Const.CLASS_RGB
-
-local QUALITY_BORDER_COLORS = EbonBuilds.Const.QUALITY_RGB
-
+local CLASS_TEXTURE  = EbonBuilds.Const.CLASS_TEXTURE
 local QUALITY_LABELS = EbonBuilds.Const.QUALITY_NAME
+local QUALITY_HEX    = EbonBuilds.Const.QUALITY_HEX
+local CLASS_MASK     = EbonBuilds.Const.CLASS_BITS
+local UNKNOWN_ICON   = "Interface\\Icons\\INV_Misc_QuestionMark"
+local EMPTY_SLOT     = "Interface\\Buttons\\UI-EmptySlot"
+
+local CLASS_ICON_SIZE = 32
+local LOCKED_SIZE     = 36
+local LOCKED_STEP     = 42
+local CONTENT_INSET   = 6
+local BOX_BOTTOM      = 10
+local PAD             = 10
+local TITLE_DROP      = 6
+local DESC_BOTTOM     = 32
+local DELETE_BOTTOM   = 4
+local STATS_COLUMN    = 260
+local MISSING_TOP     = 14
+local MISSING_BOTTOM  = 8
+local MISSING_LEFT    = 10
+local MISSING_RIGHT   = 4
+local MISSING_ICON    = 24
+local MISSING_NAME    = 160
+local MISSING_SOURCE  = 200
+local MISSING_SCORE   = 54
 
 local viewFrame
-local tab1, tab2, tab3, tab4
+local tabs
 local contentArea
 local state = { build = nil }
-
-StaticPopupDialogs["EBONBUILDS_DELETE_BUILD"] = {
-    text = "",
-    button1 = L.DELETE,
-    button2 = L.CANCEL,
-    OnAccept = function()
-        local build = state.build
-        if not build or not build.id then return end
-        local id = build.id
-        EbonBuilds.Build.Delete(id)
-        if EbonBuilds.BuildList and EbonBuilds.BuildList.Refresh then
-            EbonBuilds.BuildList.Refresh()
-        end
-        local builds = EbonBuilds.Build.List()
-        if #builds > 0 then
-            EbonBuilds.Build.SetActive(builds[1].id)
-            EbonBuilds.ViewRouter.Show("buildOverview", { build = builds[1] })
-        else
-            EbonBuilds.ViewRouter.Show("welcome")
-        end
-    end,
-    timeout = 0,
-    whileDead = true,
-    hideOnEscape = true,
-    preferredIndex = 3,
-}
-
-local SetClassIcon     = EbonBuilds.Widgets.SetClassIcon
-local CreateIconButton = EbonBuilds.Widgets.CreateIconButton
-
-local CLASS_MASK = EbonBuilds.Const.CLASS_BITS
 
 local PREFIXES = { "tome of ", "codex of ", "scroll of ", "manual of ", "grimoire of ", "libram of ", "tablet of " }
 local QUALITY_SUFFIXES = { " %- common", " %- uncommon", " %- rare", " %- epic", " %- legendary" }
@@ -189,131 +179,60 @@ local function ComputeMissingEchoes(build)
     return missing
 end
 
-local function BuildOverviewTab(parent)
-    local outer = CreateFrame("Frame", nil, parent)
-    outer:SetAllPoints(parent)
-
-    local classIcon = outer:CreateTexture(nil, "ARTWORK")
-    classIcon:SetWidth(32)
-    classIcon:SetHeight(32)
-    classIcon:SetPoint("TOPLEFT", outer, "TOPLEFT", 10, -10)
-    outer._classIcon = classIcon
-
-    local nameLabel = outer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    nameLabel:SetPoint("TOPLEFT", classIcon, "TOPRIGHT", 8, -6)
-    nameLabel:SetPoint("RIGHT",   outer,     "RIGHT",     -10, 0)
-    nameLabel:SetJustifyH("LEFT")
-    outer._nameLabel = nameLabel
-
-    local metaLabel = outer:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    metaLabel:SetPoint("TOPLEFT", classIcon, "BOTTOMLEFT", 0, -2)
-    metaLabel:SetPoint("RIGHT",  outer,     "RIGHT",      -10, 0)
-    metaLabel:SetJustifyH("LEFT")
-    outer._metaLabel = metaLabel
-
-    local statusFrame = CreateFrame("Button", nil, outer)
-    statusFrame:SetPoint("TOPLEFT",     metaLabel, "BOTTOMLEFT", 0, -12)
-    statusFrame:SetPoint("RIGHT",       outer,     "RIGHT",      -10, 0)
-    statusFrame:SetHeight(16)
-    local statusLabel = statusFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    statusLabel:SetAllPoints(statusFrame)
-    statusLabel:SetJustifyH("LEFT")
-    statusFrame:SetScript("OnEnter", function(self)
-        local build = state.build
-        if not build or not build.isPublic then return end
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-        GameTooltip:ClearLines()
-        GameTooltip:AddLine(L.PUBLIC_BUILD_TITLE, 1, 0.82, 0, 1)
-        GameTooltip:AddLine(L.PUBLIC_BUILD_BODY1, 0.8, 0.8, 0.8, 1)
-        GameTooltip:AddLine(L.PUBLIC_BUILD_BODY2, 0.6, 0.6, 0.6, 1)
-        GameTooltip:Show()
-    end)
-    statusFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    outer._statusLabel = statusLabel
-
-    local lockedHeader = outer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    lockedHeader:SetPoint("TOPLEFT", statusLabel, "BOTTOMLEFT", 0, -14)
-    lockedHeader:SetText(L.LOCKED_ECHOES)
-    outer._lockedHeader = lockedHeader
-
-    local lockedButtons = {}
-    for i = 1, EbonBuilds.Build.LOCKED_SLOTS do
-        local btn = CreateIconButton(outer, 36)
-        btn:SetPoint("TOPLEFT", lockedHeader, "BOTTOMLEFT", (i - 1) * 42, -6)
-        local border = btn:CreateTexture(nil, "BORDER")
-        border:SetPoint("TOPLEFT",     btn, "TOPLEFT",     -2,  2)
-        border:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT",  2, -2)
-        border:Hide()
-        btn._border = border
-        btn:SetScript("OnEnter", function(self)
-            if not self._spellId then return end
-            local name = GetSpellInfo(self._spellId)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:ClearLines()
-            if name then GameTooltip:AddLine(name, 1, 0.82, 0) end
-            GameTooltip:Show()
-        end)
-        btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        lockedButtons[i] = btn
+local function DeleteBuild()
+    local build = state.build
+    if not build or not build.id then return end
+    EbonBuilds.Build.Delete(build.id)
+    if EbonBuilds.BuildList and EbonBuilds.BuildList.Refresh then
+        EbonBuilds.BuildList.Refresh()
     end
-    outer._lockedButtons = lockedButtons
+    local builds = EbonBuilds.Build.List()
+    if #builds > 0 then
+        EbonBuilds.Build.SetActive(builds[1].id)
+        EbonBuilds.ViewRouter.Show("buildOverview", { build = builds[1] })
+    else
+        EbonBuilds.ViewRouter.Show("welcome")
+    end
+end
 
-    local autoToggle = CreateFrame("Button", nil, outer, "UIPanelButtonTemplate")
-    autoToggle:SetWidth(140)
-    autoToggle:SetHeight(22)
-    autoToggle:SetPoint("TOPLEFT", lockedButtons[1], "BOTTOMLEFT", 0, -22)
-    autoToggle:SetText(L.AUTOMATION_ON)
-    autoToggle:SetScript("OnClick", function(self)
-        local build = state.build
-        if not build then return end
-        build.automationEnabled = not build.automationEnabled
-        self:SetText(build.automationEnabled and L.AUTOMATION_ON or L.AUTOMATION_OFF)
-    end)
-    outer._autoToggle = autoToggle
+local function ConfirmDelete()
+    local build = state.build
+    if not build then return end
+    EbonBuilds.api:Dialog({
+        text      = string.format(L.DELETE_BUILD_CONFIRM, build.title or L.UNTITLED),
+        acceptKey = "DELETE",
+        cancelKey = "CANCEL",
+        onAccept  = DeleteBuild,
+    })
+end
 
-    local editBtn = CreateFrame("Button", nil, outer, "UIPanelButtonTemplate")
-    editBtn:SetWidth(120)
-    editBtn:SetHeight(22)
-    editBtn:SetPoint("LEFT", autoToggle, "RIGHT", 8, 0)
-    editBtn:SetText(L.EDIT_BUILD)
-    editBtn:SetScript("OnClick", function()
-        if state.build then
-            EbonBuilds.ViewRouter.Show("buildTabs", { mode = "edit", build = state.build })
-        end
-    end)
+local function LockedSpell(i)
+    local build = state.build
+    return build and build.lockedEchoes and build.lockedEchoes[i]
+end
 
-    local descHeader = outer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    descHeader:SetPoint("TOPLEFT", autoToggle, "BOTTOMLEFT", 0, -14)
-    descHeader:SetText(L.DESCRIPTION_LABEL)
-    outer._descHeader = descHeader
+local function FitDescription(page)
+    local width = page._descScroll._content:GetWidth()
+    local smf, measure = page._descSmf, page._descMeasure
+    smf:SetWidth(width)
+    measure:SetWidth(width)
+    local textHeight = measure:GetStringHeight() or 0
+    smf:SetHeight(math.max(textHeight + 4, 14))
+    W.ScrollHeight(page._descScroll, textHeight + 6)
+end
 
-    local descScroll = CreateFrame("ScrollFrame", nil, outer)
-    descScroll:SetPoint("TOPLEFT",     descHeader, "BOTTOMLEFT", 0, -4)
-    descScroll:SetPoint("BOTTOMRIGHT", outer,      "BOTTOMRIGHT", -22, 28)
-
-    local descChild = CreateFrame("Frame", nil, descScroll)
-    descChild:SetWidth(416)
-    descChild:SetHeight(1)
-    descScroll:SetScrollChild(descChild)
-
-    local descBar = CreateFrame("Slider", nil, descScroll, "UIPanelScrollBarTemplate")
-    descBar:SetPoint("TOPLEFT",    descScroll, "TOPRIGHT",    -2, -4)
-    descBar:SetPoint("BOTTOMLEFT", descScroll, "BOTTOMRIGHT", -2,  4)
-    descBar:SetValueStep(20)
-    local descWheel = EbonBuilds.Widgets.WireScroll(descScroll, descChild, descBar, 20)
-
-    local descSmf = CreateFrame("ScrollingMessageFrame", nil, descChild)
-    descSmf:SetPoint("TOPLEFT", descChild, "TOPLEFT", 0, -2)
-    descSmf:SetWidth(416)
-    descSmf:SetFontObject("GameFontNormalSmall")
-    descSmf:SetJustifyH("LEFT")
-    descSmf:SetFading(false)
-    descSmf:SetInsertMode("TOP")
-    descSmf:SetMaxLines(500)
-    descSmf:SetHyperlinksEnabled(true)
-    descSmf:EnableMouse(true)
-    descSmf:EnableMouseWheel(false)
-    descSmf:SetScript("OnHyperlinkEnter", function(self, link)
+local function DescriptionText(child)
+    local smf = CreateFrame("ScrollingMessageFrame", nil, child)
+    smf:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -2)
+    smf:SetFontObject("GameFontNormalSmall")
+    smf:SetJustifyH("LEFT")
+    smf:SetFading(false)
+    smf:SetInsertMode("TOP")
+    smf:SetMaxLines(500)
+    smf:SetHyperlinksEnabled(true)
+    smf:EnableMouse(true)
+    smf:EnableMouseWheel(false)
+    smf:SetScript("OnHyperlinkEnter", function(self, link)
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
         if not pcall(GameTooltip.SetHyperlink, GameTooltip, link) then
             GameTooltip:Hide()
@@ -321,426 +240,313 @@ local function BuildOverviewTab(parent)
         end
         GameTooltip:Show()
     end)
-    descSmf:SetScript("OnHyperlinkLeave", function()
+    smf:SetScript("OnHyperlinkLeave", function()
         GameTooltip:Hide()
     end)
-    descSmf:SetScript("OnMouseWheel", descWheel)
+    return smf
+end
 
-    local descMeasure = descChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    descMeasure:SetWidth(416)
-    descMeasure:Hide()
+local function BuildOverviewTab(area)
+    local Kit = W.Kit
+    local page = W.Page(area, { spacing = 0, padding = PAD })
+    local width = page.spec.width - PAD * 2
 
+    local head = page:Add("bar", { spacing = 8 })
+    local classIcon = Kit("icon", head, {
+        size = CLASS_ICON_SIZE,
+        icon = function()
+            local build = state.build
+            return build and CLASS_ICON_TCOORDS[build.class] and CLASS_TEXTURE or UNKNOWN_ICON
+        end,
+    })
+    W.ClassIcon(classIcon, function() return state.build and state.build.class end)
 
-    outer._descSmf = descSmf
-    outer._descMeasure = descMeasure
-    outer._descScroll = descScroll
-    outer._descChild  = descChild
-    outer._descBar    = descBar
+    local titleColumn = W.Column(head)
+    W.Lead(titleColumn, TITLE_DROP)
+    local nameLabel = Kit("text", titleColumn, {
+        size = "medium", width = width - CLASS_ICON_SIZE - 8,
+        text = function()
+            local build = state.build
+            if not build then return "" end
+            return "|cff" .. W.ClassHex(build.class) .. (build.title or L.UNTITLED) .. "|r"
+        end,
+    })
 
-    local deleteBtn = CreateFrame("Button", nil, outer, "UIPanelButtonTemplate")
-    deleteBtn:SetSize(64, 20)
-    deleteBtn:SetPoint("BOTTOMLEFT", outer, "BOTTOMLEFT", 10, 4)
-    deleteBtn:SetText(L.DELETE)
-    deleteBtn:SetScript("OnClick", function()
-        local build = state.build
-        if not build then return end
-        local name = build.title or L.UNTITLED
-        StaticPopupDialogs["EBONBUILDS_DELETE_BUILD"].text = string.format(L.DELETE_BUILD_CONFIRM, name)
-        StaticPopup_Show("EBONBUILDS_DELETE_BUILD")
-    end)
-    outer._deleteBtn = deleteBtn
+    W.Gap(page, 1, 2)
+    local metaLabel = Kit("status", page, {
+        width = width,
+        text = function()
+            local build = state.build
+            if not build then return "" end
+            local specs = EbonBuilds.SpecData and EbonBuilds.SpecData[build.class]
+            local specName = specs and specs[build.spec or 1] and specs[build.spec or 1].name or ""
+            return string.format(L.BUILD_META, build.author or L.UNKNOWN, specName, build.lastModified or "")
+        end,
+    })
 
-    return outer, descSmf, descMeasure, descScroll, descChild, descBar
+    W.Gap(page, 1, 42)
+    Kit("text", page, { key = "LOCKED_ECHOES", size = "medium", color = "heading", width = width })
+    W.Gap(page, 1, 6)
+
+    local slots = page:Add("bar", { spacing = LOCKED_STEP - LOCKED_SIZE })
+    local lockedButtons = {}
+    for i = 1, EbonBuilds.Build.LOCKED_SLOTS do
+        local slot = i
+        local btn = Kit("icon", slots, {
+            size = LOCKED_SIZE,
+            icon = function()
+                local spellId = LockedSpell(slot)
+                return spellId and select(3, GetSpellInfo(spellId)) or EMPTY_SLOT
+            end,
+        })
+        W.SpellTip(btn, function() return LockedSpell(slot) end)
+        btn._ring = W.Ring(btn)
+        lockedButtons[i] = btn
+    end
+    page._lockedButtons = lockedButtons
+
+    W.Gap(page, 1, 22)
+    local actions = page:Add("bar", { spacing = 8 })
+    local autoToggle = Kit("button", actions, {
+        minWidth = 140,
+        text = function()
+            local build = state.build
+            return build and build.automationEnabled and L.AUTOMATION_ON or L.AUTOMATION_OFF
+        end,
+        onClick = function()
+            local build = state.build
+            if not build then return end
+            build.automationEnabled = not build.automationEnabled
+            actions:Refresh()
+        end,
+    })
+    Kit("button", actions, {
+        key = "EDIT_BUILD", minWidth = 120,
+        onClick = function()
+            if state.build then
+                EbonBuilds.ViewRouter.Show("buildTabs", { mode = "edit", build = state.build })
+            end
+        end,
+    })
+
+    W.Gap(page, 1, 14)
+    local descScroll = W.Scroll(page, { key = "DESCRIPTION_LABEL" })
+    local drop = W.Gap(page, 1, 1)
+    local deleteBtn = Kit("button", page, { key = "DELETE", minWidth = 64, onClick = ConfirmDelete })
+    drop.spec.height = math.max(1, DESC_BOTTOM - DELETE_BOTTOM - deleteBtn:GetHeight())
+    drop:SetHeight(drop.spec.height)
+    W.ScrollSize(descScroll, width, W.Rest(page, descScroll) + PAD - DELETE_BOTTOM)
+
+    local descChild = descScroll._content
+    page._descSmf     = DescriptionText(descChild)
+    page._descMeasure = descChild:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    page._descMeasure:Hide()
+    page._descScroll  = descScroll
+
+    page._elements = { classIcon, nameLabel, metaLabel, actions }
+    for i = 1, #lockedButtons do page._elements[#page._elements + 1] = lockedButtons[i] end
+
+    return page
 end
 
 local STAT_ROWS = {
-    { key = "echoesSeen",    label = L.STAT_ECHOES_SEEN },
-    { key = "runsCompleted", label = L.STAT_RUNS_COMPLETED },
-    { key = "runsReset",     label = L.STAT_RUNS_RESET },
-    { key = "picks",         label = L.STAT_PICKS },
-    { key = "rerollsUsed",   label = L.STAT_REROLLS },
-    { key = "banishesUsed",  label = L.STAT_BANISHES },
-    { key = "freezesUsed",   label = L.STAT_FREEZES },
+    { key = "echoesSeen",    label = "STAT_ECHOES_SEEN" },
+    { key = "runsCompleted", label = "STAT_RUNS_COMPLETED" },
+    { key = "runsReset",     label = "STAT_RUNS_RESET" },
+    { key = "picks",         label = "STAT_PICKS" },
+    { key = "rerollsUsed",   label = "STAT_REROLLS" },
+    { key = "banishesUsed",  label = "STAT_BANISHES" },
+    { key = "freezesUsed",   label = "STAT_FREEZES" },
 }
 
-local function BuildStatsTab(parent)
-    local y = -10
+local function Stats()
+    return state.build and state.build.stats or {}
+end
 
-    local header = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    header:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, y)
-    header:SetText(L.STATS_TITLE)
+local function StatColumn(page, key, width, headerWidth, first)
+    local column = page:Add("bar", { layout = "VERTICAL", spacing = 0, width = width })
+    local header = column:Add("text", { key = key, size = "medium", color = "heading", width = headerWidth })
+    W.Gap(column, 1, math.max(1, first - header:GetHeight()))
+    return column
+end
 
-    y = y - 30
-    local valueLabels = {}
-    for i, row in ipairs(STAT_ROWS) do
-        local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        lbl:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, y)
-        lbl:SetText(row.label .. ":")
-        lbl:SetWidth(160)
-        lbl:SetJustifyH("LEFT")
+local function StatRow(column, step, label, value)
+    local row = column:Add("bar", { spacing = 4, height = step })
+    W.Gap(row, 0, 1)
+    row:Add("text", label)
+    local val = row:Add("text", value)
+    val.text:SetJustifyH("RIGHT")
+    return val
+end
 
-        local val = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        val:SetPoint("LEFT", lbl, "RIGHT", 4, 0)
-        val:SetText("0")
-        val:SetWidth(60)
-        val:SetJustifyH("RIGHT")
-        valueLabels[row.key] = val
+local function BuildStatsTab(area)
+    local page = W.Page(area, { layout = "HORIZONTAL", spacing = 0, padding = PAD })
+    local values = {}
 
-        y = y - 22
+    local left = StatColumn(page, "STATS_TITLE", STATS_COLUMN, 240, 30)
+    for _, row in ipairs(STAT_ROWS) do
+        local labelKey, statKey = row.label, row.key
+        values[#values + 1] = StatRow(left, 22, {
+            size = "medium", width = 160,
+            text = function() return L[labelKey] .. ":" end,
+        }, {
+            width = 60,
+            text = function() return tostring(Stats()[statKey] or 0) end,
+        })
     end
 
-
-    local qy = -10
-    local qHeader = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    qHeader:SetPoint("TOPLEFT", parent, "TOPLEFT", 270, qy)
-    qHeader:SetText(L.STATS_QUALITY)
-
-    qy = qy - 26
-    local qualityLabels = {}
+    local right = StatColumn(page, "STATS_QUALITY", nil, 200, 26)
     for q = 0, 3 do
-        local qlbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        qlbl:SetPoint("TOPLEFT", parent, "TOPLEFT", 274, qy)
-        qlbl:SetText(QUALITY_LABELS[q] .. ":")
-        qlbl:SetWidth(90)
-        qlbl:SetJustifyH("LEFT")
-
-        local qval = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        qval:SetPoint("LEFT", qlbl, "RIGHT", 4, 0)
-        qval:SetText("0 (0%)")
-        qval:SetWidth(80)
-        qval:SetJustifyH("RIGHT")
-        qualityLabels[q] = qval
-
-        qy = qy - 18
+        local quality = q
+        values[#values + 1] = StatRow(right, 18, {
+            width = 90,
+            text = function() return QUALITY_LABELS[quality] .. ":" end,
+        }, {
+            width = 80,
+            text = function()
+                local st = Stats()
+                local count = (st.qualityPicks or {})[quality] or 0
+                local total = st.picks or 0
+                local pct = total > 0 and math.floor(count / total * 100) or 0
+                return string.format("%d (%d%%)", count, pct)
+            end,
+        })
     end
 
-    return valueLabels, qualityLabels
+    return page, values
 end
 
-local function BuildMissingTab(parent)
-    local scroll = CreateFrame("ScrollFrame", nil, parent)
-    scroll:SetPoint("TOPLEFT",     parent, "TOPLEFT",     10, -14)
-    scroll:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -18, 8)
-
-    local child = CreateFrame("Frame", nil, scroll)
-    child:SetWidth(460)
-    child:SetHeight(1)
-    scroll:SetScrollChild(child)
-
-    local bar = CreateFrame("Slider", nil, scroll, "UIPanelScrollBarTemplate")
-    bar:SetPoint("TOPLEFT",    scroll, "TOPRIGHT",    -2, -4)
-    bar:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", -2,  4)
-    bar:SetValueStep(16)
-
-    EbonBuilds.Widgets.WireScroll(scroll, child, bar, 16)
-
-    return scroll, child, bar
+local function BuildMissingTab(area)
+    local page = W.Page(area, { spacing = 0 })
+    W.Gap(page, 1, MISSING_TOP)
+    local row = page:Add("bar", { spacing = 0 })
+    W.Gap(row, MISSING_LEFT, 1)
+    local scroll = W.Scroll(row, { layout = "VERTICAL", spacing = 2 })
+    W.ScrollSize(scroll, page.spec.width - MISSING_LEFT - MISSING_RIGHT, page.spec.height - MISSING_TOP - MISSING_BOTTOM)
+    scroll._loading = scroll._content:Add("status", { key = "REQUESTING_DATA", width = scroll._content.spec.width - 8 })
+    return page, scroll
 end
 
-local overviewOuter
-local overviewDescSmf, overviewDescMeasure, overviewDescScroll, overviewDescChild, overviewDescBar
-local statsValueLabels, statsQualityLabels
-local missingScroll, missingChild, missingBar
+local overviewPage
+local statsValues
+local missingScroll
 local missingRows = {}
+
 local function RefreshOverview()
     local build = state.build
     if not build then return end
-    local cc = CLASS_COLORS[build.class] or { 0.5, 0.5, 0.5 }
 
-    SetClassIcon(overviewOuter._classIcon, build.class)
-    overviewOuter._nameLabel:SetText(build.title or L.UNTITLED)
-    overviewOuter._nameLabel:SetTextColor(cc[1], cc[2], cc[3], 1)
-
-    local specs = EbonBuilds.SpecData and EbonBuilds.SpecData[build.class]
-    local specName = specs and specs[build.spec or 1] and specs[build.spec or 1].name or ""
-    overviewOuter._metaLabel:SetText(string.format(L.BUILD_META,
-        build.author or L.UNKNOWN,
-        specName,
-        build.lastModified or ""))
-
-    local publicText = build.isPublic and L.STATUS_PUBLIC or L.STATUS_PRIVATE
-    local validatedText
-    if build.validated then
-        validatedText = L.STATUS_VALIDATED
-    elseif build.isPublic then
-        validatedText = L.STATUS_NOT_VALIDATED
-    else
-        validatedText = ""
-    end
-    overviewOuter._statusLabel:SetText(publicText .. validatedText)
-
-    overviewOuter._autoToggle:SetText(build.automationEnabled and L.AUTOMATION_ON or L.AUTOMATION_OFF)
-
-    local desc = build.comments or ""
-    overviewDescSmf:Clear()
-    overviewDescSmf:AddMessage(desc, 0.8, 0.8, 0.8, 1.0)
-    overviewDescMeasure:SetText(desc)
+    for _, element in ipairs(overviewPage._elements) do element:Refresh() end
 
     for i = 1, EbonBuilds.Build.LOCKED_SLOTS do
-        local btn = overviewOuter._lockedButtons[i]
-        local spellId = build.lockedEchoes and build.lockedEchoes[i]
-        if spellId then
-            btn._icon:SetTexture(select(3, GetSpellInfo(spellId)))
-            btn._spellId = spellId
-            btn:Show()
-            local data = EbonBuilds.Catalog.Entry(spellId)
-            local quality = data and data.quality or 0
-            local bc = QUALITY_BORDER_COLORS[quality] or QUALITY_BORDER_COLORS[0]
-            btn._border:SetTexture(bc[1], bc[2], bc[3])
-            btn._border:Show()
-        else
-            btn._icon:SetTexture("Interface\\Buttons\\UI-EmptySlot")
-            btn._spellId = nil
-            btn._border:Hide()
-            btn:Show()
-        end
+        local btn = overviewPage._lockedButtons[i]
+        local spellId = LockedSpell(i)
+        local data = spellId and EbonBuilds.Catalog.Entry(spellId)
+        W.SetRing(btn._ring, spellId and (data and data.quality or 0) or nil)
     end
 
-    local textHeight = overviewDescMeasure:GetStringHeight() or 0
-    overviewDescSmf:SetHeight(math.max(textHeight + 4, 14))
-    overviewDescChild:SetHeight(math.max(textHeight + 6, overviewDescScroll:GetHeight()))
-    overviewDescBar:SetMinMaxValues(0, math.max(0, overviewDescChild:GetHeight() - overviewDescScroll:GetHeight()))
+    local desc = build.comments or ""
+    overviewPage._descSmf:Clear()
+    overviewPage._descSmf:AddMessage(desc, 0.8, 0.8, 0.8, 1.0)
+    overviewPage._descMeasure:SetText(desc)
+    FitDescription(overviewPage)
 end
-
-local QUALITY_COLORS = EbonBuilds.Const.QUALITY_RGB
 
 local function RefreshStats()
-    local build = state.build
-    if not build or not statsValueLabels then return end
-    local st = build.stats or {}
-    for _, row in ipairs(STAT_ROWS) do
-        if statsValueLabels[row.key] then
-            statsValueLabels[row.key]:SetText(tostring(st[row.key] or 0))
-        end
-    end
-    for q = 0, 3 do
-        if statsQualityLabels[q] then
-            local count = (st.qualityPicks or {})[q] or 0
-            local total = st.picks or 0
-            local pct = total > 0 and math.floor(count / total * 100) or 0
-            statsQualityLabels[q]:SetText(string.format("%d (%d%%)", count, pct))
-        end
-    end
+    if not statsValues then return end
+    for _, element in ipairs(statsValues) do element:Refresh() end
 end
 
-local function CreateMissingRow()
-    local btn = CreateFrame("Button", nil, missingChild)
-    btn:SetPoint("LEFT", missingChild, "LEFT", 4, 0)
-    btn:SetPoint("RIGHT", missingChild, "RIGHT", -4, 0)
-    btn:RegisterForClicks("LeftButtonUp")
-    btn:SetScript("OnEnter", function(self)
-        if not self._spellId then return end
-        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:ClearLines()
-        local spellName = GetSpellInfo(self._spellId)
-        if spellName then
-            GameTooltip:AddLine(spellName, 1, 0.82, 0)
-        end
-        if utils and utils.GetSpellDescription then
-            local desc = utils.GetSpellDescription(self._spellId, 500, 1)
-            if desc and desc ~= "" then
-                GameTooltip:AddLine(desc, 1, 1, 1, true)
-            end
-        end
-        GameTooltip:Show()
-    end)
-    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-
-    local icon = btn:CreateTexture(nil, "ARTWORK")
-    icon:SetWidth(24)
-    icon:SetHeight(24)
-    icon:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    btn._icon = icon
-
-    local labelName = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    labelName:SetPoint("TOPLEFT", icon, "TOPRIGHT", 2, 0)
-    labelName:SetWidth(160)
-    labelName:SetJustifyH("LEFT")
-    btn._labelName = labelName
-
-    local labelSource = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    labelSource:SetPoint("TOPLEFT", labelName, "TOPRIGHT", 4, 0)
-    labelSource:SetWidth(200)
-    labelSource:SetJustifyH("LEFT")
-    labelSource:SetTextColor(0.6, 0.6, 0.6, 1)
-    btn._labelSource = labelSource
-
-    local labelScore = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    labelScore:SetPoint("TOPRIGHT", btn, "TOPRIGHT", -4, -2)
-    labelScore:SetWidth(54)
-    labelScore:SetJustifyH("RIGHT")
-    btn._labelScore = labelScore
-
-    return btn
+local function CreateMissingRow(content)
+    local row = content:Add("bar", { spacing = 2, padding = 2 })
+    row:EnableMouse(true)
+    W.SpellTip(row, function(self) return self._spellId end, { describe = true, anchor = "ANCHOR_LEFT" })
+    local icon = row:Add("icon", {
+        size = MISSING_ICON,
+        icon = function() return row._spellId and select(3, GetSpellInfo(row._spellId)) end,
+    })
+    W.SpellTip(icon, function() return row._spellId end, { describe = true, anchor = "ANCHOR_LEFT" })
+    row:Add("text", { width = MISSING_NAME, text = function() return row._name end })
+    W.Gap(row, 0, 1)
+    row:Add("status", { width = MISSING_SOURCE, text = function() return row._source end })
+    row._push = W.Gap(row, 0, 1)
+    local score = row:Add("text", { width = MISSING_SCORE, text = function() return row._score end })
+    score.text:SetJustifyH("RIGHT")
+    local push = content.spec.width - MISSING_RIGHT * 2 - row:GetWidth()
+    row._push.spec.width = math.max(0, push)
+    row._push:SetWidth(row._push.spec.width)
+    row:Layout()
+    return row
 end
 
 local function RefreshMissing()
     local build = state.build
-    if not build or not missingChild then return end
-    for _, btn in ipairs(missingRows) do btn:Hide() end
+    if not build or not missingScroll then return end
+    local content = missingScroll._content
+    for _, row in ipairs(missingRows) do row:Hide() end
     local missing = ComputeMissingEchoes(build)
     if missing == nil then
-        missingChild.loadingLabel = missingChild.loadingLabel or missingChild:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        missingChild.loadingLabel:SetPoint("TOPLEFT", missingChild, "TOPLEFT", 4, -2)
-        missingChild.loadingLabel:SetText(L.REQUESTING_DATA)
-        missingChild.loadingLabel:Show()
-        missingChild:SetHeight(20)
+        missingScroll._loading:Show()
+        content:Layout()
         return
     end
-    if missingChild.loadingLabel then
-        missingChild.loadingLabel:Hide()
-    end
-    local currY = 0
+    missingScroll._loading:Hide()
     for rowIdx, entry in ipairs(missing) do
-        if not missingRows[rowIdx] then
-            missingRows[rowIdx] = CreateMissingRow()
+        local row = missingRows[rowIdx]
+        if not row then
+            row = CreateMissingRow(content)
+            missingRows[rowIdx] = row
         end
-        local btn = missingRows[rowIdx]
-        btn:ClearAllPoints()
-        btn._spellId = entry.spellId
-        btn._icon:SetTexture(select(3, GetSpellInfo(entry.spellId)))
-        local cc = QUALITY_COLORS[entry.quality] or QUALITY_COLORS[0]
-        btn._labelName:SetText(entry.name)
-        btn._labelName:SetTextColor(cc[1], cc[2], cc[3], 1)
-        local cleanSource = (entry.dropSource or ""):gsub("^Can be found on ", "")
-        btn._labelSource:SetText(cleanSource)
-        btn._labelScore:SetText(string.format("%.0f", entry.score))
-        local srcH = btn._labelSource:GetStringHeight() or 16
-        local rowH = math.max(26, srcH + 4)
-        btn:SetHeight(rowH)
-        btn:SetPoint("TOPLEFT", missingChild, "TOPLEFT", 0, -currY)
-        btn:SetPoint("RIGHT", missingChild, "RIGHT", -4, 0)
-        btn:Show()
-        currY = currY + rowH + 2
+        row._spellId = entry.spellId
+        row._name    = "|cff" .. (QUALITY_HEX[entry.quality] or QUALITY_HEX[0]) .. entry.name .. "|r"
+        row._source  = (entry.dropSource or ""):gsub("^Can be found on ", "")
+        row._score   = string.format("%.0f", entry.score)
+        row:Show()
+        row:Refresh()
     end
-    missingChild:SetHeight(math.max(1, currY))
-    missingBar:SetMinMaxValues(0, math.max(0, missingChild:GetHeight() - missingScroll:GetHeight()))
+    content:Layout()
 end
 
-local switchOverview, switchStats, switchMissing, switchLogbook
+local panes = {}
 
-local function BuildViewFrame()
-    local f = CreateFrame("Frame", "EbonBuildsBuildOverview", UIParent)
-
-    local box = CreateFrame("Frame", nil, f)
-    box:SetPoint("TOPLEFT",     f, "TOPLEFT",     0, -24)
-    box:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0,  10)
-    box:SetBackdrop({
-        bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile     = true,
-        tileSize = 16,
-        edgeSize = 16,
-        insets   = { left = 4, right = 4, top = 4, bottom = 4 },
-    })
-    box:SetBackdropColor(0, 0, 0, 0.6)
-    box:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
-
-    contentArea = CreateFrame("Frame", nil, box)
-    contentArea:SetPoint("TOPLEFT",     box, "TOPLEFT",     6, -6)
-    contentArea:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -6,  6)
-
-    overviewOuter, overviewDescSmf, overviewDescMeasure, overviewDescScroll, overviewDescChild, overviewDescBar = BuildOverviewTab(contentArea)
-
-    local statsParent = CreateFrame("Frame", nil, contentArea)
-    statsParent:SetAllPoints(contentArea)
-    statsParent:Hide()
-    statsValueLabels, statsQualityLabels = BuildStatsTab(statsParent)
-
-    local missingParent = CreateFrame("Frame", nil, contentArea)
-    missingParent:SetAllPoints(contentArea)
-    missingParent:Hide()
-    missingScroll, missingChild, missingBar = BuildMissingTab(missingParent)
-
-    local logbookParent = CreateFrame("Frame", nil, contentArea)
-    logbookParent:SetAllPoints(contentArea)
-    logbookParent:Hide()
-
-    local function HideAllContent()
-        overviewOuter:Hide()
-        statsParent:Hide()
-        missingParent:Hide()
-        logbookParent:Hide()
-        if EbonBuilds.SessionHistory and EbonBuilds.SessionHistory.Hide then
-            EbonBuilds.SessionHistory.Hide()
-        end
+local function ShowPane(id)
+    local pane = panes[id]
+    if not pane then return end
+    W.ShowPage(pane)
+    if id ~= "logbook" and EbonBuilds.SessionHistory and EbonBuilds.SessionHistory.Hide then
+        EbonBuilds.SessionHistory.Hide()
     end
-
-    switchOverview = function()
-        HideAllContent()
-        overviewOuter:Show()
-        overviewOuter._deleteBtn:Show()
-        PanelTemplates_SetTab(f, 1)
-        PanelTemplates_EnableTab(f, 2)
-        PanelTemplates_EnableTab(f, 3)
-        PanelTemplates_EnableTab(f, 4)
+    if id == "overview" then
         RefreshOverview()
-    end
-
-    switchStats = function()
-        HideAllContent()
-        overviewOuter._deleteBtn:Hide()
-        statsParent:Show()
-        PanelTemplates_SetTab(f, 2)
-        PanelTemplates_EnableTab(f, 1)
-        PanelTemplates_EnableTab(f, 3)
-        PanelTemplates_EnableTab(f, 4)
+    elseif id == "stats" then
         RefreshStats()
-    end
-
-    switchMissing = function()
-        HideAllContent()
-        overviewOuter._deleteBtn:Hide()
-        missingParent:Show()
-        PanelTemplates_SetTab(f, 3)
-        PanelTemplates_EnableTab(f, 1)
-        PanelTemplates_EnableTab(f, 2)
-        PanelTemplates_EnableTab(f, 4)
+    elseif id == "missing" then
         RefreshMissing()
+    elseif id == "logbook" then
+        EbonBuilds.SessionHistory.Show(pane)
     end
+end
 
-    switchLogbook = function()
-        HideAllContent()
-        overviewOuter._deleteBtn:Hide()
-        logbookParent:Show()
-        PanelTemplates_SetTab(f, 4)
-        PanelTemplates_EnableTab(f, 1)
-        PanelTemplates_EnableTab(f, 2)
-        PanelTemplates_EnableTab(f, 3)
-        EbonBuilds.SessionHistory.Show(logbookParent)
-    end
+local function BuildViewFrame(container)
+    local f = W.Page(container, { spacing = 0 })
 
-    tab1 = CreateFrame("Button", "EbonBuildsBuildOverviewTab1", f, "OptionsFrameTabButtonTemplate")
-    tab1:SetID(1)
-    tab1:SetText(L.TAB_OVERVIEW)
-    tab1:SetPoint("TOPLEFT", f, "TOPLEFT", 10, 0)
-    PanelTemplates_TabResize(tab1, 0)
-    tab1:SetScript("OnClick", function() if switchOverview then switchOverview() end end)
+    tabs = W.Tabs(f, {
+        { "overview", "TAB_OVERVIEW" },
+        { "stats",    "TAB_STATS" },
+        { "missing",  "TAB_MISSING" },
+        { "logbook",  "TAB_LOGBOOK" },
+    }, ShowPane)
 
-    tab2 = CreateFrame("Button", "EbonBuildsBuildOverviewTab2", f, "OptionsFrameTabButtonTemplate")
-    tab2:SetID(2)
-    tab2:SetText(L.TAB_STATS)
-    tab2:SetPoint("LEFT", tab1, "RIGHT", -16, 0)
-    PanelTemplates_TabResize(tab2, 0)
-    tab2:SetScript("OnClick", function() if switchStats then switchStats() end end)
+    contentArea = f:Add("bar", {
+        frame = "SMALL", layout = "VERTICAL", spacing = 0, padding = CONTENT_INSET,
+        width = f.spec.width, height = f.spec.height - tabs:GetHeight() - BOX_BOTTOM,
+    })
 
-    tab3 = CreateFrame("Button", "EbonBuildsBuildOverviewTab3", f, "OptionsFrameTabButtonTemplate")
-    tab3:SetID(3)
-    tab3:SetText(L.TAB_MISSING)
-    tab3:SetPoint("LEFT", tab2, "RIGHT", -16, 0)
-    PanelTemplates_TabResize(tab3, 0)
-    tab3:SetScript("OnClick", function() if switchMissing then switchMissing() end end)
-
-    tab4 = CreateFrame("Button", "EbonBuildsBuildOverviewTab4", f, "OptionsFrameTabButtonTemplate")
-    tab4:SetID(4)
-    tab4:SetText(L.TAB_LOGBOOK)
-    tab4:SetPoint("LEFT", tab3, "RIGHT", -16, 0)
-    PanelTemplates_TabResize(tab4, 0)
-    tab4:SetScript("OnClick", function() if switchLogbook then switchLogbook() end end)
-
-    PanelTemplates_SetNumTabs(f, 4)
-    PanelTemplates_SetTab(f, 1)
+    overviewPage = BuildOverviewTab(contentArea)
+    panes.overview = overviewPage
+    panes.stats, statsValues = BuildStatsTab(contentArea)
+    panes.missing, missingScroll = BuildMissingTab(contentArea)
+    panes.logbook = W.Page(contentArea, { spacing = 0 })
 
     return f
 end
@@ -748,12 +554,10 @@ end
 local view = {}
 
 function view.Show(container, context)
-    EbonBuilds.Widgets.Attach(viewFrame, container)
-
-    context = context or {}
-    state.build = context.build
-    if switchOverview then switchOverview() end
-    viewFrame:Show()
+    viewFrame = viewFrame or BuildViewFrame(container)
+    state.build = (context or {}).build
+    W.ShowPage(viewFrame)
+    tabs:Select("overview")
 end
 
 function view.Hide()
@@ -764,7 +568,5 @@ function view.Hide()
 end
 
 function EbonBuilds.BuildOverview.Init()
-    viewFrame = BuildViewFrame()
-    viewFrame:Hide()
     EbonBuilds.ViewRouter.Register("buildOverview", view)
 end

@@ -15,23 +15,10 @@ local SLIDER_WIDTH = 180
 local RARITY_WIDTH = 28
 local BUTTON_GAP = 8
 local BUTTON_HEIGHT = 32
-local ROW_WIDTH = BUTTON_WIDTH + BUTTON_GAP + HUNT_BUTTON_WIDTH + BUTTON_GAP
-                  + RARITY_WIDTH + BUTTON_GAP + SLIDER_WIDTH
-local PANEL_HEIGHT = BUTTON_HEIGHT
 local BUTTON_Y = -8
 
-local TOGGLE_W, TOGGLE_H = 34, 14
-local KNOB = 10
-local KNOB_INSET = 2
-local KNOB_TRAVEL = TOGGLE_W - KNOB - KNOB_INSET
-local SLIDE_TIME = 0.12
 local TOGGLE_X = 0.040
 local TOGGLE_Y = 0.062
-
-local TRACK_OFF = { 0.12, 0.12, 0.12 }
-local TRACK_ON  = { 0.45, 0.25, 0.70 }
-local KNOB_OFF  = { 0.45, 0.45, 0.45 }
-local KNOB_ON   = { 1.00, 0.82, 0.00 }
 
 local QUALITY_COLORS = {}
 for q, hex in pairs(EbonBuilds.Const.QUALITY_HEX) do QUALITY_COLORS[q] = "|cff" .. hex end
@@ -105,24 +92,18 @@ local probeTimer  = Timer.New("Hunt: orb count probe")
 local huntTimer   = Timer.New("Hunt: cycle floor")
 local unfoldTimer = Timer.New("Hunt: unfold")
 
-local settle = CreateFrame("Frame")
-if EbonBuilds.api then EbonBuilds.api:Track("Hunt: orb offer settle", settle) end
-settle:Hide()
-settle:SetScript("OnUpdate", function(f, delta)
-  f.left = f.left - delta
-  if f.left <= 0 then
-    f:Hide()
-    return
-  end
-  f.acc = f.acc + delta
-  if f.acc < TICK then return end
-  f.acc = 0
+local settleTimer = Timer.New("Hunt: orb offer settle")
+local settleUntil = 0
+
+local function SettleTick()
+  if GetTime() >= settleUntil then return end
   Refresh()
-end)
+  Arm(settleTimer, TICK, SettleTick)
+end
 
 local function ArmSettle()
-  settle.left, settle.acc = SETTLE_WINDOW, 0
-  settle:Show()
+  settleUntil = GetTime() + SETTLE_WINDOW
+  Arm(settleTimer, TICK, SettleTick)
 end
 
 local function Orb()
@@ -613,87 +594,46 @@ local function InstallToggleHooks()
   end
 end
 
-local function ShowTooltip(self)
-  GameTooltip:SetOwner(self, "ANCHOR_TOP")
-  GameTooltip:ClearLines()
-  GameTooltip:AddLine(L.REROLL_TITLE, 1, 0.82, 0)
+local function RerollTip(add)
+  add(L.REROLL_TITLE, "title")
 
   local pick, fmt, _, a, b = CanReroll()
   if pick then
     local cost = Multiplier()
-    GameTooltip:AddLine(string.format(L.REROLL_BODY, ColoredName(pick.spellId, pick.quality)),
-      1, 1, 1, true)
-    GameTooltip:AddLine(string.format(L.REROLL_COST, cost, S(cost), Charges()), 1, 1, 1)
+    add(string.format(L.REROLL_BODY, ColoredName(pick.spellId, pick.quality)), "text", true)
+    add(string.format(L.REROLL_COST, cost, S(cost), Charges()))
   else
-    GameTooltip:AddLine(Fmt(fmt, a, b) or L.REROLL_CANNOT, 1, 0.3, 0.3, true)
+    add(Fmt(fmt, a, b) or L.REROLL_CANNOT, "error", true)
   end
-  GameTooltip:Show()
 end
 
-local function StyleButton(b)
-  local options = EbonAPI.Ebonhold.OptionsService()
-  local transparent = options and options:GetSetting("transparentDesign")
-  if not transparent or not b.SetBackdrop then return end
-
-  local function hideTex(t)
-    if t then
-      t:Hide()
-      t:SetTexture(nil)
-    end
-  end
-  hideTex(b:GetNormalTexture())
-  hideTex(b:GetPushedTexture())
-  hideTex(b:GetHighlightTexture())
-  hideTex(b:GetDisabledTexture())
-
-  b:SetBackdrop({
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-    tile = true,
-    tileSize = 16,
-    edgeSize = 2,
-    insets = { left = 2, right = 2, top = 2, bottom = 2 },
-  })
-  b:SetBackdropColor(0.16, 0.08, 0.24, 0.95)
-  b:SetBackdropBorderColor(0, 0, 0, 1)
-  if b.text then b.text:SetFontObject("GameFontNormalSmall") end
-  b._transparent = true
-end
-
-local function ShowHuntTooltip(self)
-  GameTooltip:SetOwner(self, "ANCHOR_TOP")
-  GameTooltip:ClearLines()
-
+local function HuntTip(add)
   local cost = Multiplier()
 
   if hunt.active then
-    GameTooltip:AddLine(L.HUNT_RUNNING, 1, 0.82, 0)
-    GameTooltip:AddLine(string.format(L.HUNT_PROGRESS, hunt.spent, hunt.budget, cost), 1, 1, 1)
-    GameTooltip:AddLine(L.HUNT_CLICK_STOP, 0.6, 0.6, 0.6)
-    GameTooltip:Show()
+    add(L.HUNT_RUNNING, "title")
+    add(string.format(L.HUNT_PROGRESS, hunt.spent, hunt.budget, cost))
+    add(L.HUNT_CLICK_STOP, "muted")
     return
   end
 
-  GameTooltip:AddLine(L.HUNT_TITLE, 1, 0.82, 0)
+  add(L.HUNT_TITLE, "title")
   local ok, fmt, a, b = CanHunt()
   if ok then
     local budget = math.min(budgetWanted, Charges())
     local draws  = math.floor(budget / cost)
-    GameTooltip:AddLine(string.format(L.HUNT_BODY, WantedCount()), 1, 1, 1, true)
-    GameTooltip:AddLine(string.format(L.HUNT_BODY_COST, cost, draws, budget), 1, 1, 1, true)
-    GameTooltip:AddLine(L.HUNT_BODY_MANUAL, 0.6, 0.6, 0.6, true)
+    add(string.format(L.HUNT_BODY, WantedCount()), "text", true)
+    add(string.format(L.HUNT_BODY_COST, cost, draws, budget), "text", true)
+    add(L.HUNT_BODY_MANUAL, "muted", true)
     if cost == 1 then
-      GameTooltip:AddLine(L.HUNT_BODY_HINT, 0.5, 0.5, 0.5, true)
+      add(L.HUNT_BODY_HINT, "faint", true)
     end
   else
-    GameTooltip:AddLine(Fmt(fmt, a, b) or L.HUNT_CANNOT, 1, 0.3, 0.3, true)
+    add(Fmt(fmt, a, b) or L.HUNT_CANNOT, "error", true)
   end
-  GameTooltip:Show()
 end
 
 local rarityButton = nil
-local rarityMenu = nil
-local rarityRows = nil
 
 local function QualityRGB(q)
   local const = EbonBuilds and EbonBuilds.Const
@@ -702,144 +642,86 @@ local function QualityRGB(q)
   return 1, 1, 1
 end
 
-local function RarityMenuInit(_, level, menuList)
-  local wl = ns.Wishlist
-  if not level or not wl then return end
-
-  if level == 1 then
-    rarityRows = wl.Armed()
-    if #rarityRows == 0 then
-      local info = UIDropDownMenu_CreateInfo()
-      info.text, info.notCheckable, info.disabled = L.NOTHING_ARMED, true, true
-      UIDropDownMenu_AddButton(info, level)
-      return
-    end
-    for i = 1, #rarityRows do
-      local info = UIDropDownMenu_CreateInfo()
-      info.text = rarityRows[i].name
-      info.notCheckable = true
-      info.hasArrow = true
-      info.menuList = i
-      UIDropDownMenu_AddButton(info, level)
-    end
-    return
-  end
-
-  local row = rarityRows and rarityRows[tonumber(menuList)]
-  if not row then return end
+local function OpenFloorMenu(row)
+  local items = { { text = row.name, title = true } }
   for i = 1, #row.qualities do
     local q = row.qualities[i]
-    local info = UIDropDownMenu_CreateInfo()
-    info.text = (i == 1) and L.RARITY_ANY or string.format(L.RARITY_MIN, QualityName(q))
-    info.checked = (row.floor == q)
-    info.func = function()
-      wl.SetFloor(row.key, q)
-      CloseDropDownMenus()
-    end
-    UIDropDownMenu_AddButton(info, level)
+    items[#items + 1] = {
+      text = (i == 1) and L.RARITY_ANY or string.format(L.RARITY_MIN, QualityName(q)),
+      checked = row.floor == q,
+      onClick = function() ns.Wishlist.SetFloor(row.key, q) end,
+    }
   end
+  EbonBuilds.api:OpenMenu(items)
 end
 
-local function OpenRarityMenu(self)
-  if not rarityMenu then
-    rarityMenu = CreateFrame("Frame", "EbonBuildsRarityMenu", UIParent, "UIDropDownMenuTemplate")
-    UIDropDownMenu_Initialize(rarityMenu, RarityMenuInit, "MENU")
+local function OpenRarityMenu()
+  local wl = ns.Wishlist
+  if not wl then return end
+  local rows = wl.Armed()
+  local items = {}
+  for i = 1, #rows do
+    local row = rows[i]
+    items[i] = { text = row.name, onClick = function() OpenFloorMenu(row) end }
   end
-  ToggleDropDownMenu(1, nil, rarityMenu, self, 0, 0)
+  if #items == 0 then items[1] = { key = "NOTHING_ARMED", disabled = true } end
+  EbonBuilds.api:OpenMenu(items)
 end
 
-local function ShowRarityTooltip(self)
-  GameTooltip:SetOwner(self, "ANCHOR_TOP")
-  GameTooltip:ClearLines()
-  GameTooltip:AddLine(L.RARITY_TITLE, 1, 0.82, 0)
+local function RarityTip(add)
+  add(L.RARITY_TITLE, "title")
   if WantedCount() == 0 then
-    GameTooltip:AddLine(L.NOTHING_ARMED, 1, 0.3, 0.3, true)
+    add(L.NOTHING_ARMED, "error", true)
   else
-    GameTooltip:AddLine(L.RARITY_BODY, 1, 1, 1, true)
-    GameTooltip:AddLine(L.RARITY_HINT, 0.6, 0.6, 0.6, true)
+    add(L.RARITY_BODY, "text", true)
+    add(L.RARITY_HINT, "muted", true)
   end
-  GameTooltip:Show()
 end
 
-local function MakeButton(parent, label, width, onClick, onTooltip)
-  local b
-  local utils = _G.utils
-  if utils and utils.CreateSimpleCustomButton then
-    b = utils.CreateSimpleCustomButton(parent, label, nil, width, BUTTON_HEIGHT)
-  else
-    b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    b:SetSize(width, BUTTON_HEIGHT)
-    b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    b.text:SetPoint("CENTER")
-    b.text:SetText(label)
-  end
-  StyleButton(b)
-
-  local glow = b:CreateTexture(nil, "OVERLAY")
-  glow:SetAllPoints(b)
-  glow:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
-  glow:SetBlendMode("ADD")
-  glow:SetVertexColor(0.45, 0.25, 0.7, 0.4)
-  glow:Hide()
-  b._glow = glow
-
-  b:SetScript("OnEnter", function(self)
+local function MakeButton(parent, label, width, onClick, tip)
+  local b = EbonBuilds.Widgets.Kit("button", parent, {
+    text = function(self) return self._label end,
+    width = width, height = BUTTON_HEIGHT,
+    onClick = function(self) onClick(self) end,
+  })
+  b._label = label
+  b:Refresh()
+  EbonBuilds.Widgets.Tip(b, function(add)
     Refresh()
-    if self:IsEnabled() and self._transparent then
-      self:SetBackdropBorderColor(0.7, 0.4, 1, 1)
-      self:SetBackdropColor(0.32, 0.16, 0.46, 0.98)
-    end
-    if self:IsEnabled() then self._glow:Show() end
-    onTooltip(self)
+    tip(add)
   end)
-  b:SetScript("OnLeave", function(self)
-    if self._transparent then
-      self:SetBackdropBorderColor(0, 0, 0, 1)
-      self:SetBackdropColor(0.16, 0.08, 0.24, 0.95)
-    end
-    self._glow:Hide()
-    GameTooltip:Hide()
-  end)
-  b:SetScript("OnClick", onClick)
-  b:ClearAllPoints()
   return b
 end
 
 local function MakeSlider(parent)
-  local s = CreateFrame("Slider", "EbonBuildsRerollBudget", parent, "OptionsSliderTemplate")
-  s:SetWidth(SLIDER_WIDTH)
-  s:SetMinMaxValues(1, math.max(1, DEFAULT_BUDGET))
-  s:SetValueStep(1)
-
-  local name = s:GetName()
-  s._low   = _G[name .. "Low"]
-  s._high  = _G[name .. "High"]
-  s._label = _G[name .. "Text"]
-
+  local s
   local function Relabel(value)
-    if not s._label then return end
     local cost = Multiplier()
     if cost > 1 then
       local draws = math.floor(value / cost)
-      s._label:SetText(string.format(L.BUDGET_DRAWS, value, draws, S(draws), cost))
+      s._title = string.format(L.BUDGET_DRAWS, value, draws, S(draws), cost)
     else
-      s._label:SetText(string.format(L.BUDGET, value))
+      s._title = string.format(L.BUDGET, value)
     end
+    s:SetTitle(s._title)
     s._lblValue, s._lblCost = value, cost
   end
+
+  s = EbonBuilds.Widgets.Kit("range", parent, {
+    width = SLIDER_WIDTH, min = 1, max = math.max(1, DEFAULT_BUDGET), step = 1,
+    value = DEFAULT_BUDGET,
+    text = function(self) return self._title or "" end,
+    onChange = function(_, value)
+      value = math.floor(value + 0.5)
+      budgetWanted = value
+      Relabel(value)
+      Refresh()
+    end,
+  })
   s._relabel = Relabel
+  if s.low then s.low:Hide() end
+  if s.high then s.high:Hide() end
 
-  if s._low then s._low:Hide() end
-  if s._high then s._high:Hide() end
-
-  s:SetScript("OnValueChanged", function(self, value)
-    value = math.floor(value + 0.5)
-    budgetWanted = value
-    Relabel(value)
-    Refresh()
-  end)
-
-  s:SetValue(DEFAULT_BUDGET)
   Relabel(DEFAULT_BUDGET)
   return s
 end
@@ -847,7 +729,7 @@ end
 local function SetEnabled(w, on)
   if w._eorEnabled == on then return end
   w._eorEnabled = on
-  if on then w:Enable() else w:Disable() end
+  w:SetDisabledState(not on)
 end
 
 local function SetShown(f, on)
@@ -856,23 +738,23 @@ local function SetShown(f, on)
   if on then f:Show() else f:Hide() end
 end
 
+local function Anchor(panel, parent)
+  uiParent = parent
+  panel:SetParent(parent)
+  panel:SetFrameLevel(parent:GetFrameLevel() + 20)
+  panel:ClearAllPoints()
+  panel:SetPoint("TOP", parent, "BOTTOM", 0, BUTTON_Y)
+end
+
 local function EnsureUI(parent)
   if container then return container end
 
-  container = CreateFrame("Frame", nil, parent)
-  container:SetSize(ROW_WIDTH, PANEL_HEIGHT)
-  container:SetFrameLevel(parent:GetFrameLevel() + 20)
-  container:SetPoint("TOP", parent, "BOTTOM", 0, BUTTON_Y)
-  uiParent = parent
+  container = EbonBuilds.Widgets.Kit("bar", parent, { spacing = BUTTON_GAP })
+  Anchor(container, parent)
 
-  button = MakeButton(container, "Reroll (Orb)", BUTTON_WIDTH, Reroll, ShowTooltip)
-  button:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
-
-  huntButton = MakeButton(container, "Chercher", HUNT_BUTTON_WIDTH, ToggleHunt, ShowHuntTooltip)
-  huntButton:SetPoint("TOPLEFT", button, "TOPRIGHT", BUTTON_GAP, 0)
-
-  rarityButton = MakeButton(container, "", RARITY_WIDTH, OpenRarityMenu, ShowRarityTooltip)
-  rarityButton:SetPoint("TOPLEFT", huntButton, "TOPRIGHT", BUTTON_GAP, 0)
+  button = MakeButton(container, "Reroll (Orb)", BUTTON_WIDTH, Reroll, RerollTip)
+  huntButton = MakeButton(container, "Chercher", HUNT_BUTTON_WIDTH, ToggleHunt, HuntTip)
+  rarityButton = MakeButton(container, "", RARITY_WIDTH, OpenRarityMenu, RarityTip)
   local swatch = rarityButton:CreateTexture(nil, "OVERLAY")
   swatch:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
   swatch:SetWidth(RARITY_WIDTH - 14)
@@ -881,7 +763,6 @@ local function EnsureUI(parent)
   rarityButton.swatch = swatch
 
   slider = MakeSlider(container)
-  slider:SetPoint("LEFT", rarityButton, "RIGHT", BUTTON_GAP, 0)
 
   SetShown(container, false)
   return container
@@ -891,13 +772,19 @@ local function RefreshSliderBounds()
   local maxOrbs = math.max(1, Charges())
   if slider._eorMax == maxOrbs then return end
   slider._eorMax = maxOrbs
-  slider:SetMinMaxValues(1, maxOrbs)
-  if budgetWanted > maxOrbs then slider:SetValue(maxOrbs) end
+  slider:SetRange(1, maxOrbs, 1)
+  if budgetWanted > maxOrbs then
+    budgetWanted = maxOrbs
+    slider:SetValue(maxOrbs)
+  else
+    slider:SetValue(budgetWanted)
+  end
+  slider._relabel(budgetWanted)
 end
 
 local function RefreshSliderLabel()
   if not slider or not slider._relabel then return end
-  local value = math.floor(slider:GetValue() + 0.5)
+  local value = budgetWanted
   if slider._lblValue == value and slider._lblCost == Multiplier() then return end
   slider._relabel(value)
 end
@@ -918,11 +805,9 @@ local function RefreshRarity()
   end
 end
 
-local function SetButtonText(b, label, enabled)
-  if not b.text then return end
-  b.text:SetText(label)
-  local shade = enabled and 1 or 0.5
-  b.text:SetTextColor(shade, shade, shade)
+local function SetButtonText(b, label)
+  b._label = label
+  b:SetLabel(label)
 end
 
 local function SetLabel(b, enabled)
@@ -957,87 +842,33 @@ end
 
 local toggle = nil
 
-local function ShowGuardTooltip(self)
-  GameTooltip:SetOwner(self, "ANCHOR_TOP")
-  GameTooltip:ClearLines()
-  GameTooltip:AddLine(L.TOGGLE, 1, 0.82, 0)
-  GameTooltip:AddLine(L.GUARD_BODY, 1, 1, 1, true)
-  GameTooltip:AddLine(hunt.armed and L.GUARD_ON or L.GUARD_OFF, 0.6, 0.6, 0.6, true)
-  GameTooltip:Show()
+local function GuardTip(add)
+  add(L.TOGGLE, "title")
+  add(L.GUARD_BODY, "text", true)
+  add(hunt.armed and L.GUARD_ON or L.GUARD_OFF, "muted", true)
 end
-
-local function Place(x)
-  local k = (x - KNOB_INSET) / (KNOB_TRAVEL - KNOB_INSET)
-  toggle._x = x
-  toggle.knob:SetPoint("LEFT", toggle, "LEFT", x, 0)
-  toggle:SetBackdropColor(
-    TRACK_OFF[1] + (TRACK_ON[1] - TRACK_OFF[1]) * k,
-    TRACK_OFF[2] + (TRACK_ON[2] - TRACK_OFF[2]) * k,
-    TRACK_OFF[3] + (TRACK_ON[3] - TRACK_OFF[3]) * k, 0.95)
-  toggle.knob:SetVertexColor(
-    KNOB_OFF[1] + (KNOB_ON[1] - KNOB_OFF[1]) * k,
-    KNOB_OFF[2] + (KNOB_ON[2] - KNOB_OFF[2]) * k,
-    KNOB_OFF[3] + (KNOB_ON[3] - KNOB_OFF[3]) * k)
-end
-
-local slide = CreateFrame("Frame")
-if EbonBuilds.api then EbonBuilds.api:Track("Hunt: switch slide", slide) end
-slide:Hide()
-slide:SetScript("OnUpdate", function(f, delta)
-  f.elapsed = f.elapsed + delta
-  local p = f.elapsed / SLIDE_TIME
-  if p >= 1 then
-    f:Hide()
-    Place(f.to)
-    return
-  end
-  Place(f.from + (f.to - f.from) * p * p * (3 - 2 * p))
-end)
 
 local function PaintToggle(on)
   if not toggle or toggle._on == on then return end
   toggle._on = on
-  slide.from = toggle._x or KNOB_INSET
-  slide.to = on and KNOB_TRAVEL or KNOB_INSET
-  slide.elapsed = 0
-  slide:Show()
+  toggle:Refresh()
 end
 
 local function BuildToggle(root)
   if toggle or not root or not PE then return end
 
-  local t = CreateFrame("Button", nil, root)
-  t:SetSize(TOGGLE_W, TOGGLE_H)
+  local t = EbonBuilds.Widgets.Kit("toggle", root, {
+    key = "TOGGLE",
+    get = function() return hunt.armed end,
+    onChange = ToggleGuard,
+  })
   t:SetFrameLevel(root:GetFrameLevel() + 10)
   t:SetPoint("TOPRIGHT", root, "TOPRIGHT",
     -root:GetWidth() * TOGGLE_X, -root:GetHeight() * TOGGLE_Y)
-  t:SetBackdrop({
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-    tile = true,
-    tileSize = 16,
-    edgeSize = 2,
-    insets = { left = 1, right = 1, top = 1, bottom = 1 },
-  })
-  t:SetBackdropBorderColor(0, 0, 0, 1)
-
-  local knob = t:CreateTexture(nil, "OVERLAY")
-  knob:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
-  knob:SetWidth(KNOB)
-  knob:SetHeight(TOGGLE_H - 4)
-  t.knob = knob
-
-  local label = t:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  label:SetPoint("BOTTOM", t, "TOP", 0, 3)
-  label:SetText(L.TOGGLE)
-
-  t:SetScript("OnClick", ToggleGuard)
-  t:SetScript("OnEnter", ShowGuardTooltip)
-  t:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  EbonBuilds.Widgets.Tip(t, GuardTip)
 
   toggle = t
   toggle._on = hunt.armed
-  Place(hunt.armed and KNOB_TRAVEL or KNOB_INSET)
 end
 
 local function Evaluate()
@@ -1058,7 +889,7 @@ local function Evaluate()
   local offerPending = orb and orb.IsOfferPending and orb.IsOfferPending() or false
 
   if offerPending then
-    settle:Hide()
+    Cancel(settleTimer)
     ProbeCharges()
     HuntTick(choices)
   end
@@ -1074,13 +905,7 @@ local function Evaluate()
   end
 
   local panel = EnsureUI(parent)
-  if uiParent ~= parent then
-    uiParent = parent
-    panel:SetParent(parent)
-    panel:SetFrameLevel(parent:GetFrameLevel() + 20)
-    panel:ClearAllPoints()
-    panel:SetPoint("TOP", parent, "BOTTOM", 0, BUTTON_Y)
-  end
+  if uiParent ~= parent then Anchor(panel, parent) end
 
   RefreshSliderBounds()
   RefreshSliderLabel()
@@ -1124,6 +949,7 @@ end
 local Boot
 Boot = function()
   EbonBuilds.Events.Off("PLAYER_LOGIN", Boot)
+  if not EbonBuilds.api then return end
 
   PE = EbonAPI.Ebonhold.Raw()
   local ui = PE and PE.PerkUI

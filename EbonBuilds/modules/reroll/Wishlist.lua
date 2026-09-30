@@ -314,7 +314,7 @@ local discovery = EbonBuilds.Timer.New("Journal discovery")
 local wiredAll = false
 
 local function OnJournalShow()
-  if wiredAll then return end
+  if wiredAll or not EbonBuilds.api then return end
   EbonBuilds.Timer.Arm(discovery, 0, function() wiredAll = Discover() end)
 end
 

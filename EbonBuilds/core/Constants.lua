@@ -1,7 +1,7 @@
 local _, ns = ...
 EbonBuilds = ns
 
-ns.api = EbonAPI and EbonAPI:NewAddon("EbonBuilds", 0, 5) or nil
+ns.api = EbonAPI and EbonAPI:NewAddon("EbonBuilds", 1, 0) or nil
 
 local Const = {}
 EbonBuilds.Const = Const
@@ -44,6 +44,8 @@ Const.CLASS_BITS = {
 
 Const.CLASS_TEXTURE = "Interface\\TargetingFrame\\UI-Classes-Circles"
 
+Const.SAVED_SLOTS = 10
+
 Const.FAMILY_MAP = {
     Tank = "Tank", Survivability = "Survivability", Healer = "Healer",
     Caster = "Caster", ["Caster DPS"] = "Caster",
@@ -51,3 +53,5 @@ Const.FAMILY_MAP = {
     Ranged = "Ranged", ["Ranged DPS"] = "Ranged",
     None   = "No family",
 }
+
+Const.FAMILIES = { "Tank", "Survivability", "Healer", "Caster", "Melee", "Ranged", "No family" }
