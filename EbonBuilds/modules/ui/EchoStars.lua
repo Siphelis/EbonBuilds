@@ -20,7 +20,7 @@ local lines = setmetatable({}, { __mode = "k" })
 local function Forget()
     if decorated then
         decorated = false
-        Stars.Set(tipRow, nil)
+        if tipRow then Stars.Set(tipRow, nil) end
     end
 end
 
@@ -40,18 +40,22 @@ local function Decorate(button)
     if decorated then return end
     local spellId = button.spellId
     if not spellId or not GameTooltip:IsOwned(button) then return end
+    local hint = ns.Wishlist.Hint(button)
     local stars = Rating.Stars(spellId, true)
-    if not stars then return end
-
-    interest = interest or string.format(L.INTEREST_FOR, ns.ClassName(ns.Build.PlayerClassToken()))
-    GameTooltip:AddDoubleLine(interest, SPACER, 1, 0.82, 0.1, 1, 1, 1)
-    if not tipRow then tipRow = Stars.Create(GameTooltip, TIP_SIZE, TIP_GAP, "ARTWORK") end
-    Stars.Place(tipRow, "CENTER", _G["GameTooltipTextRight" .. GameTooltip:NumLines()], "CENTER", 0, 0)
-    Stars.Set(tipRow, stars)
+    if not hint and not stars then return end
     decorated = true
 
-    local partners = Rating.Partners(spellId)
-    if partners then GameTooltip:AddLine(PartnerLine(partners), 0.5, 0.75, 1, true) end
+    if hint then GameTooltip:AddLine(hint, 0.4, 0.4, 0.4) end
+    if stars then
+        interest = interest or string.format(L.INTEREST_FOR, ns.ClassName(ns.Build.PlayerClassToken()))
+        GameTooltip:AddDoubleLine(interest, SPACER, 1, 0.82, 0.1, 1, 1, 1)
+        if not tipRow then tipRow = Stars.Create(GameTooltip, TIP_SIZE, TIP_GAP, "ARTWORK") end
+        Stars.Place(tipRow, "CENTER", _G["GameTooltipTextRight" .. GameTooltip:NumLines()], "CENTER", 0, 0)
+        Stars.Set(tipRow, stars)
+
+        local partners = Rating.Partners(spellId)
+        if partners then GameTooltip:AddLine(PartnerLine(partners), 0.5, 0.75, 1, true) end
+    end
     GameTooltip:Show()
 end
 

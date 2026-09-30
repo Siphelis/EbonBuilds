@@ -48,6 +48,8 @@ L.NO_ORBS            = "Ihr habt keine Kugeln der verlorenen Erinnerungen."
 L.NOT_ENOUGH_ORBS    = "Ein Zug kostet %d Kugeln, Ihr habt %d."
 L.HUNT_RUNNING_ALREADY = "Es läuft bereits eine Jagd."
 L.NOTHING_ARMED      = "Kein Echo vorgemerkt. Strg+Klick auf eines im Echo-Journal."
+L.HUNT_MARK          = "Strg+Klick: dieses Echo jagen"
+L.HUNT_UNMARK        = "Strg+Klick: nicht mehr jagen"
 L.AUTO_ACCEPT_ON     = "Schaltet Ebonholds \"auto-accept loadout echoes\" vor der Jagd aus."
 L.BUDGET_TOO_LOW     = "Budget zu niedrig: ein Zug kostet %d Kugeln, erhöht den Regler."
 

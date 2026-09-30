@@ -45,6 +45,8 @@ L.NO_ORBS            = "Vous n'avez aucune Orbe des Souvenirs Perdus."
 L.NOT_ENOUGH_ORBS    = "Un tirage coûte %d orbes et vous en avez %d."
 L.HUNT_RUNNING_ALREADY = "Une chasse est déjà en cours."
 L.NOTHING_ARMED      = "Aucun Écho armé. Ctrl+clic sur un Écho dans le journal."
+L.HUNT_MARK          = "Ctrl+clic : chasser cet Écho"
+L.HUNT_UNMARK        = "Ctrl+clic : ne plus chasser"
 L.AUTO_ACCEPT_ON     = "Désactivez \"auto-accept loadout echoes\" d'Ebonhold avant de chasser."
 L.BUDGET_TOO_LOW     = "Budget trop bas : un tirage coûte %d orbes, montez le curseur."
 

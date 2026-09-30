@@ -156,6 +156,14 @@ local function OrbArmed()
   return (orb and orb.IsArmed and orb.IsArmed()) and true or false
 end
 
+function Wishlist.Hint(button)
+  local id = button.spellId
+  if not id or not button._eorWrapper or button:GetScript("OnClick") ~= button._eorWrapper or OrbArmed() then
+    return nil
+  end
+  return wanted[KeyOf(id)] and L.HUNT_UNMARK or L.HUNT_MARK
+end
+
 local function EnsureMark(button)
   local mark = button._eorMark
   if mark then return mark end
@@ -183,15 +191,15 @@ local function HookClick(button)
   button._eorOriginal = original
 
   local wrapper = function(self, mouseButton, down)
-    if mouseButton == "LeftButton" and IsControlKeyDown() and not OrbArmed() then
-      local id = self.spellId
-      if id then
-        Wishlist.Toggle(id)
-        return
-      end
+    local id = self.spellId
+    if id and mouseButton == "LeftButton" and IsControlKeyDown() and not OrbArmed() then
+      Wishlist.Toggle(id)
+      local enter = self:GetScript("OnEnter")
+      if enter then enter(self) end
+    else
+      local passthrough = self._eorOriginal
+      if passthrough then passthrough(self, mouseButton, down) end
     end
-    local passthrough = self._eorOriginal
-    if passthrough then passthrough(self, mouseButton, down) end
     local after = ns.OnJournalClick
     if after then after(self) end
   end

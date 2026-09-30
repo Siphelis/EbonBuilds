@@ -45,6 +45,8 @@ L.NO_ORBS            = "No tienes Orbes de Recuerdos Perdidos."
 L.NOT_ENOUGH_ORBS    = "Una tirada cuesta %d orbes y tienes %d."
 L.HUNT_RUNNING_ALREADY = "Ya hay una caza en curso."
 L.NOTHING_ARMED      = "Ningún Eco marcado. Ctrl+clic en uno del diario de Ecos."
+L.HUNT_MARK          = "Ctrl+clic: cazar este Eco"
+L.HUNT_UNMARK        = "Ctrl+clic: dejar de cazar"
 L.AUTO_ACCEPT_ON     = "Desactiva \"auto-accept loadout echoes\" de Ebonhold antes de cazar."
 L.BUDGET_TOO_LOW     = "Presupuesto muy bajo: una tirada cuesta %d orbes, sube el deslizador."
 

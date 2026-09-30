@@ -67,6 +67,8 @@ L.NO_ORBS            = "You have no Orbs of Lost Memories."
 L.NOT_ENOUGH_ORBS    = "A draw costs %d orbs and you hold %d."
 L.HUNT_RUNNING_ALREADY = "A hunt is already running."
 L.NOTHING_ARMED      = "No Echo armed. Ctrl+click one in the Echoes journal."
+L.HUNT_MARK          = "Ctrl+click: hunt this Echo"
+L.HUNT_UNMARK        = "Ctrl+click: stop hunting"
 L.AUTO_ACCEPT_ON     = "Turn Ebonhold's \"auto-accept loadout echoes\" off before hunting."
 L.BUDGET_TOO_LOW     = "Budget too low: one draw costs %d orbs, raise the slider."
 
