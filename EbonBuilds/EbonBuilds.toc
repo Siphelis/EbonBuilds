@@ -4,7 +4,7 @@
 ## Notes-frFR: Planificateur de builds d'Echos, notation, automatisation des choix et chasse aux Echos a l'Orbe pour Project Ebonhold.
 ## Notes-deDE: Echo-Build-Planer, Bewertung, Auswahl-Automatik und Echo-Jagd mit Kugeln fuer Project Ebonhold.
 ## Notes-esES: Planificador de builds de Ecos, puntuacion, automatizacion de elecciones y caza de Ecos con Orbes para Project Ebonhold.
-## Version: 3.0.0
+## Version: 3.0.0-1
 ## Dependencies: ProjectEbonhold, EbonAPI
 ## SavedVariables: EbonBuildsDB
 ## SavedVariablesPerCharacter: EbonBuildsCharDB

@@ -9,7 +9,7 @@ OnAddonLoaded = function(addonName)
     end
 
     if not EbonBuilds.api then
-        EbonBuilds.Log.Warn("EbonAPI 1.0 or newer is required -- EbonBuilds did not start.")
+        EbonBuilds.Log.Warn("EbonAPI 2.1 or newer is required -- EbonBuilds did not start.")
         return
     end
 
