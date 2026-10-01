@@ -37,7 +37,7 @@
 
 1. [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds/releases/latest) — lade die neueste Version herunter.
 2. Entpacke den Ordner `EbonBuilds` nach `Interface/AddOns/`.
-   Installiere oder aktualisiere [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) auf dieselbe Weise. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) braucht [EbonAPI](https://github.com/Siphelis/EbonAPI) 2.0.0 oder neuer. [EbonAPI](https://github.com/Siphelis/EbonAPI) wird von den Ebonhold-Addons gemeinsam genutzt. Ohne [EbonAPI](https://github.com/Siphelis/EbonAPI) startet [EbonBuilds](https://github.com/Siphelis/EbonBuilds) nicht.
+   Installiere oder aktualisiere [**EbonAPI**](https://github.com/Siphelis/EbonAPI/releases/latest) auf dieselbe Weise. [EbonBuilds](https://github.com/Siphelis/EbonBuilds) braucht [EbonAPI](https://github.com/Siphelis/EbonAPI) 2.1.0 oder neuer. [EbonAPI](https://github.com/Siphelis/EbonAPI) wird von den Ebonhold-Addons gemeinsam genutzt. Ohne [EbonAPI](https://github.com/Siphelis/EbonAPI) startet [EbonBuilds](https://github.com/Siphelis/EbonBuilds) nicht.
 3. Prüfe im Addon-Auswahlbildschirm, dass [**EbonBuilds**](https://github.com/Siphelis/EbonBuilds) und [**EbonAPI**](https://github.com/Siphelis/EbonAPI) angehakt sind.
 
 Das Addon nutzt die Sprache deines Spiels: Englisch, Französisch, Deutsch oder Spanisch. Zum Ändern drücke Esc und klicke auf **EbonAPI**. Wähle sie auf der Seite **Allgemein** in der Liste **Sprache**.
