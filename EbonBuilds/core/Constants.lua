@@ -1,7 +1,8 @@
 local _, ns = ...
 EbonBuilds = ns
 
-ns.api = EbonAPI and EbonAPI:NewAddon("EbonBuilds", 2, 1, { icon = "Spell_Shadow_SoulGem" }) or nil
+ns.NAME = "EbonBuilds"
+ns.api = EbonAPI and EbonAPI:NewAddon(ns.NAME, 2, 1, { icon = "Spell_Shadow_SoulGem" }) or nil
 
 local Const = {}
 EbonBuilds.Const = Const

@@ -3,7 +3,7 @@ local _, ns = ...
 local Log = {}
 ns.Log = Log
 
-local WARN_PREFIX    = "|cffff4444[EbonBuilds]|r "
+local WARN_PREFIX    = "|cffff4444[" .. ns.NAME .. "]|r "
 local ERROR_COOLDOWN = 30
 
 local prefixes = {}
@@ -12,7 +12,7 @@ local function Prefix(tag)
     local key = tag or ""
     local p = prefixes[key]
     if not p then
-        p = "|cff33ccff[EbonBuilds" .. (tag and (" " .. tag) or "") .. "]|r "
+        p = "|cff33ccff[" .. ns.NAME .. (tag and (" " .. tag) or "") .. "]|r "
         prefixes[key] = p
     end
     return p

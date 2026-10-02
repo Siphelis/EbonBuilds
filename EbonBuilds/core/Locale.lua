@@ -372,4 +372,4 @@ L.SYNC_NO_CHANNEL    = "The common channel is not joined yet -- try again in a f
 L.NO_PERK_UI         = "ProjectEbonhold.PerkUI not found -- automation disabled. Echo selection falls back to the game UI."
 L.BANLIST_PURGED     = "%d ban-list entry(ies) purged."
 
-ns.L = EbonAPI.Locale.register("EbonBuilds", { enUS = L })
+ns.L = EbonAPI.Locale.register(ns.NAME, { enUS = L })

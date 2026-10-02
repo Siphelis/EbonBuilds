@@ -120,7 +120,7 @@ local function Adopt(key)
 end
 
 local function OnReceived(_, addon, key)
-    if addon ~= "EbonBuilds" then return end
+    if addon ~= EbonBuilds.NAME then return end
     Adopt(key)
 end
 

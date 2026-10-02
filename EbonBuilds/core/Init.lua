@@ -1,7 +1,7 @@
 local OnAddonLoaded
 
 OnAddonLoaded = function(addonName)
-    if addonName ~= "EbonBuilds" then return end
+    if addonName ~= EbonBuilds.NAME then return end
     EbonBuilds.Events.Off("ADDON_LOADED", OnAddonLoaded)
 
     if not EbonAPI.Ebonhold.IsPresent() then
@@ -9,7 +9,7 @@ OnAddonLoaded = function(addonName)
     end
 
     if not EbonBuilds.api then
-        EbonBuilds.Log.Warn("EbonAPI 2.1 or newer is required -- EbonBuilds did not start.")
+        EbonBuilds.Log.Warn("EbonAPI 2.1 or newer is required -- " .. EbonBuilds.NAME .. " did not start.")
         return
     end
 
@@ -43,7 +43,7 @@ OnAddonLoaded = function(addonName)
         { "Automation",           function() EbonBuilds.Automation.Init()      end },
         { "EchoStars",            function() EbonBuilds.EchoStars.Init()       end },
         { "Sync",                 function() EbonBuilds.Sync.Init()            end },
-        { "Version",              function() EbonBuilds.api:Version(GetAddOnMetadata("EbonBuilds", "Version"), nil) end },
+        { "Version",              function() EbonBuilds.api:Version(GetAddOnMetadata(EbonBuilds.NAME, "Version"), nil) end },
     }
 
     local failed = {}

@@ -349,4 +349,4 @@ L.SYNC_NO_CHANNEL    = "El canal común aún no está unido -- inténtalo de nue
 
 L.BANLIST_PURGED     = "%d entrada(s) de la lista de destierros borrada(s)."
 
-EbonAPI.Locale.register("EbonBuilds", { esES = L })
+EbonAPI.Locale.register(ns.NAME, { esES = L })

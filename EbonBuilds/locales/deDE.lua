@@ -352,4 +352,4 @@ L.SYNC_NO_CHANNEL    = "Der gemeinsame Kanal ist noch nicht beigetreten -- versu
 
 L.BANLIST_PURGED     = "%d Eintrag/Einträge der Bannliste gelöscht."
 
-EbonAPI.Locale.register("EbonBuilds", { deDE = L })
+EbonAPI.Locale.register(ns.NAME, { deDE = L })

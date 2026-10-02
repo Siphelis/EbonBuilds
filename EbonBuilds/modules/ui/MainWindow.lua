@@ -20,7 +20,7 @@ end
 function EbonBuilds.MainWindow.RegisterOptions()
     EbonBuilds.api:Options({
         type = "group",
-        name = "EbonBuilds",
+        name = EbonBuilds.NAME,
         get = function(info) return Settings()[info[#info]] end,
         set = function(info, value) Settings()[info[#info]] = value end,
         args = {
@@ -47,7 +47,7 @@ end
 
 local function BuildFrame()
     local frame = EbonBuilds.api:Window("main", {
-        text    = "EbonBuilds",
+        text    = EbonBuilds.NAME,
         width   = WINDOW_WIDTH,
         height  = WINDOW_HEIGHT,
         layout  = "HORIZONTAL",
@@ -118,9 +118,9 @@ function EbonBuilds.MainWindow._ShowInitialView()
     end
 end
 
-SLASH_EbonBuilds1 = "/ebb"
-SLASH_EbonBuilds2 = "/ebonbuilds"
-SlashCmdList["EbonBuilds"] = function(input)
+_G["SLASH_" .. EbonBuilds.NAME .. "1"] = "/ebb"
+_G["SLASH_" .. EbonBuilds.NAME .. "2"] = "/ebonbuilds"
+SlashCmdList[EbonBuilds.NAME] = function(input)
     local cmd = strtrim(input or ""):lower()
     local verb, arg = cmd:match("^(%S*)%s*(%S*)$")
     if verb == "help" then
