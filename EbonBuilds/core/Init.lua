@@ -43,7 +43,7 @@ OnAddonLoaded = function(addonName)
         { "Automation",           function() EbonBuilds.Automation.Init()      end },
         { "EchoStars",            function() EbonBuilds.EchoStars.Init()       end },
         { "Sync",                 function() EbonBuilds.Sync.Init()            end },
-        { "Version",              function() EbonBuilds.api:Version(GetAddOnMetadata(EbonBuilds.NAME, "Version"), nil) end },
+        { "Version",              function() EbonBuilds.api:Version(GetAddOnMetadata(EbonBuilds.NAME, "Version"), GetAddOnMetadata(EbonBuilds.NAME, "X-Website")) end },
     }
 
     local failed = {}

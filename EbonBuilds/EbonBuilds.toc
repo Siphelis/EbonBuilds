@@ -1,6 +1,7 @@
 ## Interface: 30300
 ## Title: EbonBuilds
-## Version: 3.0.2
+## Version: 3.0.4-0
+## X-Website: https://github.com/Siphelis/EbonBuilds/releases/latest
 ## Dependencies: ProjectEbonhold, EbonAPI
 ## SavedVariables: EbonBuildsDB
 ## SavedVariablesPerCharacter: EbonBuildsCharDB
